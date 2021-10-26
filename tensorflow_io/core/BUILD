@@ -192,7 +192,6 @@ cc_library(
     alwayslink = 1,
 )
 
-
 # A library for use in the bigquery kernels.
 cc_library(
     name = "bigquery_lib_cc",
