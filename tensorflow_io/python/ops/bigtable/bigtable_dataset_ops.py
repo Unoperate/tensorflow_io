@@ -5,6 +5,9 @@ from tensorflow_io.python.ops import core_ops
 from tensorflow.python.framework import dtypes
 import tensorflow as tf
 
+from tensorflow_io.python.ops.bigtable.bigtable_row_set import from_rows_or_ranges, RowSet
+from tensorflow_io.python.ops.bigtable.bigtable_row_range import infinite
+
 
 class BigtableClient:
     """BigtableClient is the entrypoint for interacting with Cloud Bigtable in TF.
@@ -28,8 +31,23 @@ class BigtableTable:
         self._table_id = table_id
         self._client_resource = client_resource
 
-    def read_rows(self, columns: List[str]):
+    def read_rows(self, columns: List[str], row_set: RowSet):
         return _BigtableDataset(self._client_resource, self._table_id, columns)
+    
+    def parallel_read_rows(self, columns: List[str], num_parallel_calls=1, row_set: RowSet=from_rows_or_ranges(infinite())):
+        samples = core_ops.bigtable_sample_row_keys(self._client_resource, self._table_id)
+        shards = core_ops.bigtable_split_work(self._client_resource, samples, num_parallel_calls, row_set._impl)
+
+
+
+        return shards.interleave(
+            map_func=self.read_rows,
+            cycle_length=num_parallel_calls,
+            block_length=1,
+            num_parallel_calls=num_parallel_calls,
+            deterministic=False,
+        )
+
 
 
 class _BigtableDataset(dataset_ops.DatasetSource):
