@@ -103,12 +103,3 @@ REGISTER_OP("BigtableSampleRowKeys")
       return tensorflow::Status::OK();
     });
 
-
-REGISTER_OP("BigtableSplitWork")
-    .Input("")
-    .Attr("table_id: string")
-    .Output("samples: string")
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext* c) {
-      c->set_output(0, c->Vector(c->UnknownDim()));
-      return tensorflow::Status::OK();
-    });

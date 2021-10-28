@@ -4,6 +4,7 @@ from tensorflow.python.framework import tensor_spec
 from tensorflow_io.python.ops import core_ops
 from tensorflow.python.framework import dtypes
 import tensorflow as tf
+from tensorflow.python.data.ops import dataset_ops
 
 from tensorflow_io.python.ops.bigtable.bigtable_row_set import from_rows_or_ranges, RowSet
 from tensorflow_io.python.ops.bigtable.bigtable_row_range import infinite
@@ -36,12 +37,9 @@ class BigtableTable:
     
     def parallel_read_rows(self, columns: List[str], num_parallel_calls=1, row_set: RowSet=from_rows_or_ranges(infinite())):
         samples = core_ops.bigtable_sample_row_keys(self._client_resource, self._table_id)
-        shards = core_ops.bigtable_split_work(self._client_resource, samples, num_parallel_calls, row_set._impl)
-
-
-
-        return shards.interleave(
-            map_func=self.read_rows,
+        samples_ds = dataset_ops.Dataset.from_tensor_slices(samples)
+        return samples_ds.interleave(
+            map_func=lambda x: self.read_rows(columns, row_set),
             cycle_length=num_parallel_calls,
             block_length=1,
             num_parallel_calls=num_parallel_calls,
