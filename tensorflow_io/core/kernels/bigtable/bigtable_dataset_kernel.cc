@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 #include "absl/memory/memory.h"
 #include "google/cloud/bigtable/table.h"
+#include "google/cloud/bigtable/table_admin.h"
 #include "tensorflow/core/framework/common_shape_fns.h"
 #include "tensorflow/core/framework/dataset.h"
 #include "tensorflow/core/framework/op.h"
@@ -80,6 +81,8 @@ class BigtableClientOp : public OpKernel {
       ResourceMgr* mgr = ctx->resource_manager();
       OP_REQUIRES_OK(ctx, cinfo_.Init(mgr, def()));
       BigtableClientResource* resource;
+      VLOG(1) << "BigtableClientOp compute container:" << cinfo_.container()
+              << " name:" << cinfo_.name();
       OP_REQUIRES_OK(ctx, mgr->LookupOrCreate<BigtableClientResource>(
                               cinfo_.container(), cinfo_.name(), &resource,
                               [this, ctx](BigtableClientResource** ret)
@@ -315,6 +318,65 @@ class BigtableDatasetOp : public DatasetOpKernel {
 
 REGISTER_KERNEL_BUILDER(Name("BigtableDataset").Device(DEVICE_CPU),
                         BigtableDatasetOp);
+
+class BigtableRowsetResource : public ResourceBase {
+ public:
+  explicit BigtableRowsetResource(cbt::RowSet const& row_set)
+       {
+           row_set_ = std::move(row_set);
+       }
+
+  string DebugString() const override { return "BigtableRowsetResource"; }
+
+  cbt::RowSet row_set_;
+};
+
+class BigtableEmptyRowsetOp : public OpKernel {
+ public:
+  explicit BigtableEmptyRowsetOp(OpKernelConstruction* ctx) : OpKernel(ctx) {}
+
+  ~BigtableEmptyRowsetOp() override {
+    VLOG(1) << "BigtableEmptyRowsetOp dtor";
+    if (cinfo_.resource_is_private_to_kernel()) {
+      if (!cinfo_.resource_manager()
+               ->Delete<BigtableRowsetResource>(cinfo_.container(),
+                                                cinfo_.name())
+               .ok()) {
+        // Do nothing; the resource can have been deleted by session resets.
+      }
+    }
+  }
+
+  void Compute(OpKernelContext* ctx) override TF_LOCKS_EXCLUDED(mu_) {
+    VLOG(1) << "BigtableEmptyRowsetOp compute";
+    mutex_lock l(mu_);
+    ResourceMgr* mgr = ctx->resource_manager();
+    OP_REQUIRES_OK(ctx, cinfo_.Init(mgr, def()));
+    VLOG(1) << "BigtableEmptyRowsetOp compute container:" << cinfo_.container()
+            << " name:" << cinfo_.name();
+    BigtableRowsetResource* resource;
+    OP_REQUIRES_OK(ctx, mgr->LookupOrCreate<BigtableRowsetResource>(
+                            cinfo_.container(), cinfo_.name(), &resource,
+                            [this, ctx](BigtableRowsetResource** ret)
+                                TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) {
+                                    cbt::RowSet set;
+                                  *ret =
+                                      new BigtableRowsetResource(std::move(set));
+                                  return Status::OK();
+                                }));
+    core::ScopedUnref resource_cleanup(resource);
+    OP_REQUIRES_OK(ctx, MakeResourceHandleToOutput(
+                            ctx, 0, cinfo_.container(), cinfo_.name(),
+                            TypeIndex::Make<BigtableRowsetResource>()));
+  }
+
+ private:
+  mutex mu_;
+  ContainerInfo cinfo_ TF_GUARDED_BY(mu_);
+};
+
+REGISTER_KERNEL_BUILDER(Name("BigtableEmptyRowset").Device(DEVICE_CPU),
+                        BigtableEmptyRowsetOp);
 
 }  // namespace
 }  // namespace data
