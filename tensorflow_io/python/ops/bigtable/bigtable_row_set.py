@@ -14,9 +14,12 @@
 
 """Module implementing basic functions for obtaining BigTable RowSets"""
 
+from tensorflow.python.framework import dtypes
 from tensorflow_io.python.ops import core_ops
 from . import bigtable_row_range
 from typing import Union
+import tensorflow
+
 
 class RowSet:
     def __init__(self, impl):
@@ -24,48 +27,49 @@ class RowSet:
 
     def __repr__(self) -> str:
         return core_ops.bigtable_print_rowset(self._impl).numpy()[0].decode()
-    
-    def append(self, row_or_range):
+
+    def _append(self, row_or_range):
         if isinstance(row_or_range, str):
             core_ops.bigtable_rowset_append_str(self._impl, row_or_range)
         else:
-            core_ops.bigtable_rowset_append_row_range(self._impl, row_or_range._impl)
+            core_ops.bigtable_rowset_append_row_range(
+                self._impl, row_or_range._impl)
 
 
 def empty():
-  """Create an empty row set."""
-  return RowSet(core_ops.bigtable_empty_rowset())
+    """Create an empty row set."""
+    return RowSet(core_ops.bigtable_empty_rowset())
 
 
 def from_rows_or_ranges(*args: Union[str, bigtable_row_range.RowRange]):
-  """ Create a set from a row range.
+    """ Create a set from a row range.
 
-  Args:
-    *args: A row range (RowRange) which will be
-        appended to an empty row set.
-  Returns:
-    RowSet: a set of rows containing the given row range.
-  """
-  row_set = empty()
-  for row_or_range in args:
-    row_set.append(row_or_range)
+    Args:
+      *args: A row range (RowRange) which will be
+          appended to an empty row set.
+    Returns:
+      RowSet: a set of rows containing the given row range.
+    """
+    row_set = empty()
+    for row_or_range in args:
+        row_set._append(row_or_range)
 
-  return row_set
+    return row_set
 
 
-def intersect(row_set, row_range):
-  """ Modify a row set by intersecting its contents with a row range.
+def intersect(row_set: RowSet, row_range: bigtable_row_range.RowRange):
+    """ Modify a row set by intersecting its contents with a row range.
 
-  All rows intersecting with the given range will be removed from the set
-  and all row ranges will either be adjusted so that they do not cover
-  anything beyond the given range or removed entirely (if they have an
-  empty intersection with the given range).
+    All rows intersecting with the given range will be removed from the set
+    and all row ranges will either be adjusted so that they do not cover
+    anything beyond the given range or removed entirely (if they have an
+    empty intersection with the given range).
 
-  Args:
-    row_set: A set (RowSet) which will be intersected.
-    row_range (RowRange): The range with which this row set will be
-        intersected.
-  Returns:
-    RowSet: an intersection of the given row set and row range.
-  """
-  return RowSet(core_ops.bigtable_rowset_intersect(row_set._impl, row_range._impl))
+    Args:
+      row_set: A set (RowSet) which will be intersected.
+      row_range (RowRange): The range with which this row set will be
+          intersected.
+    Returns:
+      RowSet: an intersection of the given row set and row range.
+    """
+    return RowSet(core_ops.bigtable_rowset_intersect(row_set._impl, row_range._impl))

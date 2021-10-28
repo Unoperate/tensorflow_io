@@ -308,9 +308,11 @@ class BigtableRowsetResource : public ResourceBase {
   }
 
   void AppendStr(std::string const& row_key) { row_set_.Append(row_key); }
-  void AppendRowRange(cbt::RowRange const& row_range) { row_set_.Append(row_range); }
+  void AppendRowRange(cbt::RowRange const& row_range) {
+    row_set_.Append(row_range);
+  }
   cbt::RowSet Intersect(cbt::RowRange const& row_range) {
-      return row_set_.Intersect(row_range);
+    return row_set_.Intersect(row_range);
   }
 
   string DebugString() const override { return "BigtableRowsetResource"; }
@@ -333,9 +335,7 @@ class BigtableRowRangeResource : public ResourceBase {
     return res;
   }
 
-  cbt::RowRange& RowRange(){
-      return row_range_;
-  }
+  cbt::RowRange& RowRange() { return row_range_; }
 
   string DebugString() const override { return "BigtableRowRangeResource"; }
 
@@ -417,34 +417,39 @@ class BigtableRowRangeOp
  private:
   Status CreateResource(BigtableRowRangeResource** resource)
       TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
+    VLOG(1) << "BigtableRowRangeOp constructing row_range:"
+            << (left_open_ ? "(" : "[") << left_row_key_ << ":"
+            << right_row_key_ << (right_open_ ? ")" : "]");
 
-    VLOG(1) << "BigtableRowRangeOp constructing row_range:"  << (left_open_ ? "(" : "[")<< left_row_key_ << ":" << right_row_key_ << (right_open_ ? ")" : "]");
-    
     // both empty - infinite
-    if(left_row_key_.empty() && right_row_key_.empty()){
-        *resource = new BigtableRowRangeResource(cbt::RowRange::InfiniteRange());
-        return Status::OK();
+    if (left_row_key_.empty() && right_row_key_.empty()) {
+      *resource = new BigtableRowRangeResource(cbt::RowRange::InfiniteRange());
+      return Status::OK();
     }
-    
+
     // open
-    if(left_open_ && right_open_){
-        *resource = new BigtableRowRangeResource(cbt::RowRange::Open(left_row_key_, right_row_key_));
-        return Status::OK();
+    if (left_open_ && right_open_) {
+      *resource = new BigtableRowRangeResource(
+          cbt::RowRange::Open(left_row_key_, right_row_key_));
+      return Status::OK();
     }
     // closed
-    if(!left_open_ && !right_open_){
-        *resource = new BigtableRowRangeResource(cbt::RowRange::Closed(left_row_key_, right_row_key_));
-        return Status::OK();
+    if (!left_open_ && !right_open_) {
+      *resource = new BigtableRowRangeResource(
+          cbt::RowRange::Closed(left_row_key_, right_row_key_));
+      return Status::OK();
     }
     // right_open
-    if(!left_open_ && right_open_){
-        *resource = new BigtableRowRangeResource(cbt::RowRange::RightOpen(left_row_key_, right_row_key_));
-        return Status::OK();
+    if (!left_open_ && right_open_) {
+      *resource = new BigtableRowRangeResource(
+          cbt::RowRange::RightOpen(left_row_key_, right_row_key_));
+      return Status::OK();
     }
     // left_open
-    if(left_open_ && !right_open_){
-        *resource = new BigtableRowRangeResource(cbt::RowRange::LeftOpen(left_row_key_, right_row_key_));
-        return Status::OK();
+    if (left_open_ && !right_open_) {
+      *resource = new BigtableRowRangeResource(
+          cbt::RowRange::LeftOpen(left_row_key_, right_row_key_));
+      return Status::OK();
     }
     // will never reach this;
     throw std::exception();
@@ -460,7 +465,6 @@ class BigtableRowRangeOp
 
 REGISTER_KERNEL_BUILDER(Name("BigtableRowRange").Device(DEVICE_CPU),
                         BigtableRowRangeOp);
-
 
 class BigtablePrintRowRangeOp : public OpKernel {
  public:
@@ -560,23 +564,21 @@ class BigtableRowsetAppendStrOp : public OpKernel {
 REGISTER_KERNEL_BUILDER(Name("BigtableRowsetAppendStr").Device(DEVICE_CPU),
                         BigtableRowsetAppendStrOp);
 
-
 class BigtableRowsetAppendRowRangeOp : public OpKernel {
  public:
   explicit BigtableRowsetAppendRowRangeOp(OpKernelConstruction* context)
-      : OpKernel(context) {
-  }
+      : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override {
     BigtableRowsetResource* row_set_resource;
-    OP_REQUIRES_OK(context,
-                   GetResourceFromContext(context, "row_set_resource", &row_set_resource));
+    OP_REQUIRES_OK(context, GetResourceFromContext(context, "row_set_resource",
+                                                   &row_set_resource));
     core::ScopedUnref row_set_resource_unref(row_set_resource);
-
 
     BigtableRowRangeResource* row_range_resource;
     OP_REQUIRES_OK(context,
-                   GetResourceFromContext(context, "row_range_resource", &row_range_resource));
+                   GetResourceFromContext(context, "row_range_resource",
+                                          &row_range_resource));
     core::ScopedUnref row_range_resource_unref(row_range_resource);
 
     row_set_resource->AppendRowRange(row_range_resource->RowRange());
@@ -590,7 +592,6 @@ class BigtableRowsetAppendRowRangeOp : public OpKernel {
 REGISTER_KERNEL_BUILDER(Name("BigtableRowsetAppendRowRange").Device(DEVICE_CPU),
                         BigtableRowsetAppendRowRangeOp);
 
-
 class BigtablePrefixRowRangeOp
     : public MutableResourceOpKernel<BigtableRowRangeResource> {
  public:
@@ -603,7 +604,8 @@ class BigtablePrefixRowRangeOp
  private:
   Status CreateResource(BigtableRowRangeResource** resource)
       TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
-    *resource = new BigtableRowRangeResource(cbt::RowRange::Prefix(prefix_str_));
+    *resource =
+        new BigtableRowRangeResource(cbt::RowRange::Prefix(prefix_str_));
     return Status::OK();
   }
 
@@ -615,7 +617,6 @@ class BigtablePrefixRowRangeOp
 REGISTER_KERNEL_BUILDER(Name("BigtablePrefixRowRange").Device(DEVICE_CPU),
                         BigtablePrefixRowRangeOp);
 
-
 class BigtableRowsetIntersectOp : public OpKernel {
  public:
   explicit BigtableRowsetIntersectOp(OpKernelConstruction* context)
@@ -626,26 +627,28 @@ class BigtableRowsetIntersectOp : public OpKernel {
     ResourceMgr* mgr = context->resource_manager();
     OP_REQUIRES_OK(context, cinfo_.Init(mgr, def()));
 
-
     BigtableRowsetResource* row_set_resource;
-    OP_REQUIRES_OK(context,
-                   GetResourceFromContext(context, "row_set_resource", &row_set_resource));
+    OP_REQUIRES_OK(context, GetResourceFromContext(context, "row_set_resource",
+                                                   &row_set_resource));
     core::ScopedUnref row_set_resource_unref(row_set_resource);
 
     BigtableRowRangeResource* row_range_resource;
     OP_REQUIRES_OK(context,
-                   GetResourceFromContext(context, "row_range_resource", &row_range_resource));
+                   GetResourceFromContext(context, "row_range_resource",
+                                          &row_range_resource));
     core::ScopedUnref row_range_resource_unref(row_range_resource);
 
-
     BigtableRowsetResource* result_resource;
-    OP_REQUIRES_OK(context,
-                   mgr->LookupOrCreate<BigtableRowsetResource>(
-                       cinfo_.container(), cinfo_.name(), &result_resource,
-                       [this,row_set_resource,row_range_resource](BigtableRowsetResource** ret) TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) {
-                           *ret = new BigtableRowsetResource(row_set_resource->Intersect(row_range_resource->RowRange()));
-                            return Status::OK();
-                       }));
+    OP_REQUIRES_OK(
+        context,
+        mgr->LookupOrCreate<BigtableRowsetResource>(
+            cinfo_.container(), cinfo_.name(), &result_resource,
+            [this, row_set_resource, row_range_resource](
+                BigtableRowsetResource** ret) TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) {
+              *ret = new BigtableRowsetResource(
+                  row_set_resource->Intersect(row_range_resource->RowRange()));
+              return Status::OK();
+            }));
 
     OP_REQUIRES_OK(context, MakeResourceHandleToOutput(
                                 context, 0, cinfo_.container(), cinfo_.name(),
@@ -660,7 +663,6 @@ class BigtableRowsetIntersectOp : public OpKernel {
 
 REGISTER_KERNEL_BUILDER(Name("BigtableRowsetIntersect").Device(DEVICE_CPU),
                         BigtableRowsetIntersectOp);
-
 
 }  // namespace
 }  // namespace data
