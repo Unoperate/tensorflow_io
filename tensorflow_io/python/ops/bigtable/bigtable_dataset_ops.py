@@ -5,6 +5,9 @@ from tensorflow_io.python.ops import core_ops
 from tensorflow.python.framework import dtypes
 import tensorflow as tf
 
+from tensorflow_io.python.ops.bigtable.bigtable_row_set import from_rows_or_ranges, RowSet
+from tensorflow_io.python.ops.bigtable.bigtable_row_range import infinite
+
 
 class BigtableCredentials:
   pass
@@ -45,6 +48,7 @@ class BigtableTable:
 
     def read_rows(self, columns: List[str]):
         return _BigtableDataset(self._client_resource, self._table_id, columns)
+
 
 
 class _BigtableDataset(dataset_ops.DatasetSource):

@@ -55,10 +55,9 @@ class BigtableClientResource : public ResourceBase {
   std::shared_ptr<cbt::DataClient> data_client_;
 };
 
-class BigtableClientOp : public ResourceOpKernel<BigtableClientResource> {
+class BigtableClientOp : public OpKernel {
  public:
-  explicit BigtableClientOp(OpKernelConstruction* ctx)
-      : ResourceOpKernel<BigtableClientResource>(ctx) {
+  explicit BigtableClientOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
     OP_REQUIRES_OK(ctx, ctx->GetAttr("project_id", &project_id_));
     OP_REQUIRES_OK(ctx, ctx->GetAttr("instance_id", &instance_id_));
     VLOG(1) << "BigtableClientOp ctor";
@@ -66,13 +65,17 @@ class BigtableClientOp : public ResourceOpKernel<BigtableClientResource> {
 
   void Compute(OpKernelContext* ctx) override TF_LOCKS_EXCLUDED(mu_) {
     VLOG(1) << "BigtableClientOp compute";
-    ResourceOpKernel<BigtableClientResource>::Compute(ctx);
-  }
+    ResourceMgr* mgr = ctx->resource_manager();
+    ContainerInfo cinfo;
+    OP_REQUIRES_OK(ctx, cinfo.Init(mgr, def()));
 
-  Status CreateResource(BigtableClientResource** resource)
-      TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
-    *resource = new BigtableClientResource(project_id_, instance_id_);
-    return Status::OK();
+    BigtableClientResource* resource =
+        new BigtableClientResource(project_id_, instance_id_);
+    OP_REQUIRES_OK(ctx, mgr->Create<BigtableClientResource>(
+                            cinfo.container(), cinfo.name(), resource));
+    OP_REQUIRES_OK(ctx, MakeResourceHandleToOutput(
+                            ctx, 0, cinfo.container(), cinfo.name(),
+                            TypeIndex::Make<BigtableClientResource>()));
   }
 
  private:
@@ -117,6 +120,10 @@ class Iterator : public DatasetIterator<Dataset> {
 
     VLOG(1) << "getting row";
     const auto& row = *it_;
+    if (!row.ok()) {
+      VLOG(1) << row.status().message();
+      _exit(1);
+    }
     for (const auto& cell : row.value().cells()) {
       std::pair<const std::string&, const std::string&> key(
           cell.family_name(), cell.column_qualifier());
@@ -349,31 +356,20 @@ class MutableResourceOpKernel : public OpKernel {
       : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override TF_LOCKS_EXCLUDED(mu_) {
-    mutex_lock l(mu_);
     ResourceMgr* mgr = context->resource_manager();
-    OP_REQUIRES_OK(context, cinfo_.Init(mgr, def()));
+    ContainerInfo cinfo;
+    OP_REQUIRES_OK(context, cinfo.Init(mgr, def()));
 
     T* resource;
+    CreateResource(&resource);
+
     OP_REQUIRES_OK(context,
-                   mgr->LookupOrCreate<T>(
-                       cinfo_.container(), cinfo_.name(), &resource,
-                       [this](T** ret) TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) {
-                         Status s = CreateResource(ret);
-                         if (!s.ok() && *ret != nullptr) {
-                           CHECK((*ret)->Unref());
-                         }
-                         return s;
-                       }));
+                   mgr->Create<T>(cinfo.container(), cinfo.name(), resource));
 
     OP_REQUIRES_OK(context, MakeResourceHandleToOutput(
-                                context, 0, cinfo_.container(), cinfo_.name(),
+                                context, 0, cinfo.container(), cinfo.name(),
                                 TypeIndex::Make<T>()));
   }
-
- protected:
-  // Variables accessible from subclasses.
-  mutex mu_;
-  ContainerInfo cinfo_ TF_GUARDED_BY(mu_);
 
  private:
   virtual Status CreateResource(T** resource)
