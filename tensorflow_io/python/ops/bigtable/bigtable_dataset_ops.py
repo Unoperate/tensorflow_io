@@ -6,6 +6,22 @@ from tensorflow.python.framework import dtypes
 import tensorflow as tf
 
 
+class BigtableCredentials:
+  pass
+
+
+class ServiceAccountJson(BigtableCredentials):
+  """A class instructing CloudBigtableClient to use a service account."""
+
+  def __init__(self, json_text: str):
+    self._json_text = json_text
+
+  @classmethod
+  def read_from_file(cls, path: str):
+    with open(path, "r", encoding="UTF-8") as f:
+      return cls(f.read())
+
+
 class BigtableClient:
     """BigtableClient is the entrypoint for interacting with Cloud Bigtable in TF.
 
@@ -13,8 +29,9 @@ class BigtableClient:
     `readSession` method to initiate a Bigtable read session.
     """
 
-    def __init__(self, project_id, instance_id):
+    def __init__(self, project_id:str, instance_id:str, credentials: BigtableCredentials = None):
         """Creates a BigtableClient to start Bigtable read sessions."""
+        self._credentials = credentials
         self._client_resource = core_ops.bigtable_client(project_id, instance_id)
 
     def get_table(self, table_id):

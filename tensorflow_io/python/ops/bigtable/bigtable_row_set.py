@@ -28,7 +28,7 @@ class RowSet:
     def __repr__(self) -> str:
         return core_ops.bigtable_print_rowset(self._impl).numpy()[0].decode()
 
-    def _append(self, row_or_range):
+    def append(self, row_or_range):
         if isinstance(row_or_range, str):
             core_ops.bigtable_rowset_append_str(self._impl, row_or_range)
         else:
@@ -52,7 +52,7 @@ def from_rows_or_ranges(*args: Union[str, bigtable_row_range.RowRange]):
     """
     row_set = empty()
     for row_or_range in args:
-        row_set._append(row_or_range)
+        row_set.append(row_or_range)
 
     return row_set
 
