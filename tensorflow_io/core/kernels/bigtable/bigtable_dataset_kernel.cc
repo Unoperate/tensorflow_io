@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 #include "absl/memory/memory.h"
+#include "google/cloud/bigtable/row_set.h"
 #include "google/cloud/bigtable/table.h"
 #include "google/cloud/bigtable/table_admin.h"
 #include "tensorflow/core/framework/common_shape_fns.h"
@@ -145,7 +146,7 @@ class Iterator : public DatasetIterator<Dataset> {
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
         reader_(
             this->dataset()->client_resource().CreateTable(table_id).ReadRows(
-                cbt::RowRange::InfiniteRange(),
+                cbt::RowSet(cbt::RowRange::InfiniteRange()),
                 cbt::Filter::Chain(CreateColumnsFilter(columns_),
                                    cbt::Filter::Latest(1)))),
         it_(this->reader_.begin()),
