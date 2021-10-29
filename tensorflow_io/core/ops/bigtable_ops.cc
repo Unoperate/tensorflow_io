@@ -106,7 +106,9 @@ REGISTER_OP("BigtableSampleRowKeys")
 
 REGISTER_OP("BigtableSampleRowSets")
     .Input("client: resource")
+    .Input("row_set: resource")
     .Attr("table_id: string")
+    .Attr("num_parallel_calls: int")
     .Output("samples: string")
     .SetShapeFn([](tensorflow::shape_inference::InferenceContext* c) {
       c->set_output(0, c->MakeShape({}));

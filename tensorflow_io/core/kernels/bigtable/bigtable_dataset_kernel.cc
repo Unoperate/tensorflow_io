@@ -88,9 +88,7 @@ class BigtableClientResource : public ResourceBase {
     return cbt::Table(data_client_, table_id);
   }
 
-  ~BigtableClientResource(){
-    VLOG(1) << "BigtableClientResource dtor";
-  }
+  ~BigtableClientResource() { VLOG(1) << "BigtableClientResource dtor"; }
 
   string DebugString() const override { return "BigtableClientResource"; }
 
@@ -112,9 +110,7 @@ class BigtableClientOp : public OpKernel {
     VLOG(1) << "BigtableClientOp ctor";
   }
 
-  ~BigtableClientOp(){
-    VLOG(1) << "BigtableClientOp dtor";
-  }
+  ~BigtableClientOp() { VLOG(1) << "BigtableClientOp dtor"; }
 
   void Compute(OpKernelContext* ctx) override TF_LOCKS_EXCLUDED(mu_) {
     VLOG(1) << "BigtableClientOp compute";

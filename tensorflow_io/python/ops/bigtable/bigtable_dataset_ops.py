@@ -6,8 +6,8 @@ from tensorflow.python.framework import dtypes
 import tensorflow as tf
 from tensorflow.python.data.ops import dataset_ops
 
-from tensorflow_io.python.ops.bigtable.bigtable_row_set import from_rows_or_ranges, RowSet
-from tensorflow_io.python.ops.bigtable.bigtable_row_range import infinite
+from tensorflow_io.python.ops.bigtable.bigtable_row_set import from_rows_or_ranges, RowSet, intersect
+from tensorflow_io.python.ops.bigtable.bigtable_row_range import infinite, right_open
 
 
 class BigtableClient:
@@ -36,11 +36,13 @@ class BigtableTable:
         return _BigtableDataset(self._client_resource, self._table_id, columns)
     
     def parallel_read_rows(self, columns: List[str], num_parallel_calls=1, row_set: RowSet=from_rows_or_ranges(infinite())):
-        samples = core_ops.bigtable_sample_row_sets(self._client_resource, self._table_id)
+        samples = core_ops.bigtable_sample_row_sets(self._client_resource, row_set._impl, self._table_id, num_parallel_calls)
         samples_ds = dataset_ops.Dataset.from_tensor_slices(samples)
         def map_func(sample):
-            print('sample', sample, 'shape', sample.shape)
-            return self.read_rows(columns, row_set)
+            print("lalalal_mysample:", sample)
+            print("lslslsample:", dir(sample[0]))
+            rs = intersect(row_set, right_open(sample[0], sample[1]))
+            return self.read_rows(columns, rs)
 
         return samples_ds.interleave(
             map_func=map_func,
