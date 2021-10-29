@@ -103,3 +103,12 @@ REGISTER_OP("BigtableSampleRowKeys")
       return tensorflow::Status::OK();
     });
 
+
+REGISTER_OP("BigtableSampleRowSets")
+    .Input("client: resource")
+    .Attr("table_id: string")
+    .Output("samples: string")
+    .SetShapeFn([](tensorflow::shape_inference::InferenceContext* c) {
+      c->set_output(0, c->MakeShape({}));
+      return tensorflow::Status::OK();
+    });

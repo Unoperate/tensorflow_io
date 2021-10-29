@@ -36,10 +36,14 @@ class BigtableTable:
         return _BigtableDataset(self._client_resource, self._table_id, columns)
     
     def parallel_read_rows(self, columns: List[str], num_parallel_calls=1, row_set: RowSet=from_rows_or_ranges(infinite())):
-        samples = core_ops.bigtable_sample_row_keys(self._client_resource, self._table_id)
+        samples = core_ops.bigtable_sample_row_sets(self._client_resource, self._table_id)
         samples_ds = dataset_ops.Dataset.from_tensor_slices(samples)
+        def map_func(sample):
+            print('sample', sample, 'shape', sample.shape)
+            return self.read_rows(columns, row_set)
+
         return samples_ds.interleave(
-            map_func=lambda x: self.read_rows(columns, row_set),
+            map_func=map_func,
             cycle_length=num_parallel_calls,
             block_length=1,
             num_parallel_calls=num_parallel_calls,
