@@ -39,10 +39,8 @@ class BigtableTable:
         samples = core_ops.bigtable_sample_row_sets(self._client_resource, row_set._impl, self._table_id, num_parallel_calls)
         samples_ds = dataset_ops.Dataset.from_tensor_slices(samples)
         def map_func(sample):
-            print("lalalal_mysample:", sample)
-            print("lslslsample:", dir(sample[0]))
-            rs = intersect(row_set, right_open(sample[0], sample[1]))
-            return self.read_rows(columns, rs)
+            rs = RowSet(core_ops.bigtable_rowset_intersect_tensor(row_set._impl, sample))
+            return self.read_rows(columns,rs)
 
         return samples_ds.interleave(
             map_func=map_func,
