@@ -281,7 +281,6 @@ class Dataset : public DatasetBase {
           std::string table_id, std::vector<std::string> columns)
       : DatasetBase(DatasetContext(ctx)),
         client_resource_(*client_resource),
-        client_resource_unref_(client_resource),
         table_id_(table_id),
         columns_(columns) {
     dtypes_.push_back(DT_STRING);
@@ -321,7 +320,6 @@ class Dataset : public DatasetBase {
 
  private:
   BigtableClientResource& client_resource_;
-  const core::ScopedUnref client_resource_unref_;
   const std::string table_id_;
   const std::vector<std::string> columns_;
   DataTypeVector dtypes_;
