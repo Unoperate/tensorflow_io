@@ -33,10 +33,14 @@ class BigtableTable:
         self._client_resource = client_resource
 
     def read_rows(self, columns: List[str], row_set: RowSet):
-        return _BigtableDataset(self._client_resource, self._table_id, columns)
+        return _BigtableDataset(self._client_resource, self._table_id, columns, row_set)
     
     def parallel_read_rows(self, columns: List[str], num_parallel_calls=1, row_set: RowSet=from_rows_or_ranges(infinite())):
+        print("asdadsasddsadsadsada")
+        print("getting samples")
         samples = core_ops.bigtable_sample_row_sets(self._client_resource, row_set._impl, self._table_id, num_parallel_calls)
+        print("$"*50)
+        print("got samples")
         samples_ds = dataset_ops.Dataset.from_tensor_slices(samples)
         def map_func(sample):
             rs = RowSet(core_ops.bigtable_rowset_intersect_tensor(row_set._impl, sample))
@@ -56,7 +60,7 @@ class BigtableTable:
 class _BigtableDataset(dataset_ops.DatasetSource):
     """_BigtableDataset represents a dataset that retrieves keys and values."""
 
-    def __init__(self, client_resource, table_id: str, columns: List[str]):
+    def __init__(self, client_resource, table_id: str, columns: List[str], row_set: RowSet):
         self._table_id = table_id
         self._columns = columns
         self._element_spec = tf.TensorSpec(
@@ -64,7 +68,7 @@ class _BigtableDataset(dataset_ops.DatasetSource):
         )
 
         variant_tensor = core_ops.bigtable_dataset(
-            client_resource, table_id, columns
+            client_resource, row_set._impl, table_id, columns
         )
         super().__init__(variant_tensor)
 

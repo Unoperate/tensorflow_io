@@ -27,6 +27,7 @@ REGISTER_OP("BigtableClient")
 
 REGISTER_OP("BigtableDataset")
     .Input("client: resource")
+    .Input("row_set: resource")
     .Attr("table_id: string")
     .Attr("columns: list(string) >= 1")
     .Output("handle: variant")

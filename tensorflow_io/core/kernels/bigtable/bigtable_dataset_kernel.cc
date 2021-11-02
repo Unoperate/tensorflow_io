@@ -82,11 +82,15 @@ class BigtableClientResource : public ResourceBase {
  public:
   explicit BigtableClientResource(const std::string& project_id,
                                   const std::string& instance_id)
-      : data_client_(CreateDataClient(project_id, instance_id)) {}
+      : data_client_(CreateDataClient(project_id, instance_id)) {
+          VLOG(1) << "BigtableClientResource ctor";
+      }
 
   cbt::Table CreateTable(const std::string& table_id) {
     VLOG(1) << "CreateTable";
-    return cbt::Table(data_client_, table_id);
+    cbt::Table table(data_client_, table_id);
+    VLOG(1) << "table crated";
+    return table;
   }
 
   ~BigtableClientResource() { VLOG(1) << "BigtableClientResource dtor"; }
@@ -101,6 +105,35 @@ class BigtableClientResource : public ResourceBase {
                                         cbt::ClientOptions());
   }
   std::shared_ptr<cbt::DataClient> data_client_;
+};
+
+class BigtableRowsetResource : public ResourceBase {
+ public:
+  explicit BigtableRowsetResource(cbt::RowSet const& row_set) : row_set_(row_set){
+    VLOG(1) << "BigtableRowsetResource ctor";
+  }
+
+  ~BigtableRowsetResource() { VLOG(1) << "BigtableRowsetResource dtor"; }
+
+  std::string PrintRowSet() {
+    std::string res;
+    google::protobuf::TextFormat::PrintToString(row_set_.as_proto(), &res);
+    return res;
+  }
+
+  void AppendStr(std::string const& row_key) { row_set_.Append(row_key); }
+  void AppendRowRange(cbt::RowRange const& row_range) {
+    row_set_.Append(row_range);
+  }
+  cbt::RowSet Intersect(cbt::RowRange const& row_range) {
+    return row_set_.Intersect(row_range);
+  }
+
+  cbt::RowSet const& RowSet() { return row_set_; }
+
+  string DebugString() const override { return "BigtableRowsetResource"; }
+
+  cbt::RowSet row_set_;
 };
 
 class BigtableClientOp : public OpKernel {
@@ -144,13 +177,16 @@ class Iterator : public DatasetIterator<Dataset> {
                     const std::vector<std::string>& columns)
       : DatasetIterator<Dataset>(params),
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
-        reader_(
-            this->dataset()->client_resource().CreateTable(table_id).ReadRows(
-                cbt::RowSet(cbt::RowRange::InfiniteRange()),
+        table_(this->dataset()->client_resource().CreateTable(table_id)),
+        reader_(this->table_.ReadRows(
+                this->dataset()->row_set_resource()->RowSet(),
+                // cbt::RowRange::InfiniteRange(),
                 cbt::Filter::Chain(CreateColumnsFilter(columns_),
                                    cbt::Filter::Latest(1)))),
         it_(this->reader_.begin()),
-        column_to_idx_(CreateColumnToIdxMap(columns_)) {}
+        column_to_idx_(CreateColumnToIdxMap(columns_)) {
+            VLOG(1) << "DatasetIterator ctor";
+        }
 
   Status GetNextInternal(IteratorContext* ctx, std::vector<Tensor>* out_tensors,
                          bool* end_of_sequence) override {
@@ -261,8 +297,8 @@ class Iterator : public DatasetIterator<Dataset> {
   }
 
   mutex mu_;
-  const std::shared_ptr<cbt::DataClient> data_client_;
   const std::vector<std::pair<std::string, std::string>> columns_;
+  cbt::Table table_;
   cbt::RowReader reader_ GUARDED_BY(mu_);
   cbt::v1::internal::RowReaderIterator it_ GUARDED_BY(mu_);
   // we're using a map with const refs to avoid copying strings when searching
@@ -275,9 +311,11 @@ class Iterator : public DatasetIterator<Dataset> {
 class Dataset : public DatasetBase {
  public:
   Dataset(OpKernelContext* ctx, BigtableClientResource* client_resource,
+    BigtableRowsetResource* row_set_resource,
           std::string table_id, std::vector<std::string> columns)
       : DatasetBase(DatasetContext(ctx)),
         client_resource_(*client_resource),
+        row_set_resource_(row_set_resource),
         table_id_(table_id),
         columns_(columns) {
     dtypes_.push_back(DT_STRING);
@@ -287,10 +325,11 @@ class Dataset : public DatasetBase {
   std::unique_ptr<IteratorBase> MakeIteratorInternal(
       const std::string& prefix) const override {
     VLOG(1) << "MakeIteratorInternal. table=" << table_id_;
-    return absl::make_unique<Iterator<Dataset>>(
+    Iterator<Dataset> * iter = new Iterator<Dataset>(
         typename DatasetIterator<Dataset>::Params{
             this, strings::StrCat(prefix, "::BigtableDataset")},
         table_id_, columns_);
+    return std::unique_ptr<Iterator<Dataset>>(iter);
   }
 
   const DataTypeVector& output_dtypes() const override { return dtypes_; }
@@ -304,6 +343,7 @@ class Dataset : public DatasetBase {
   }
 
   BigtableClientResource& client_resource() const { return client_resource_; }
+  BigtableRowsetResource* row_set_resource() const { return row_set_resource_; }
 
  protected:
   Status AsGraphDefInternal(SerializationContext* ctx,
@@ -317,6 +357,7 @@ class Dataset : public DatasetBase {
 
  private:
   BigtableClientResource& client_resource_;
+  BigtableRowsetResource* row_set_resource_;
   const std::string table_id_;
   const std::vector<std::string> columns_;
   DataTypeVector dtypes_;
@@ -333,10 +374,16 @@ class BigtableDatasetOp : public DatasetOpKernel {
   void MakeDataset(OpKernelContext* ctx, DatasetBase** output) override {
     VLOG(1) << "Make Dataset";
     BigtableClientResource* client_resource;
-    OP_REQUIRES_OK(
-        ctx, LookupResource(ctx, HandleFromInput(ctx, 0), &client_resource));
-    core::ScopedUnref client_resource_unref_(client_resource);
-    *output = new Dataset(ctx, client_resource, table_id_, columns_);
+    OP_REQUIRES_OK(ctx,
+                   GetResourceFromContext(ctx, "client", &client_resource));
+    core::ScopedUnref unref_client(client_resource);
+
+    BigtableRowsetResource* row_set_resource;
+    OP_REQUIRES_OK(ctx,
+                   GetResourceFromContext(ctx, "row_set", &row_set_resource));
+    core::ScopedUnref row_set_resource_unref_(row_set_resource);
+
+    *output = new Dataset(ctx, client_resource,row_set_resource, table_id_, columns_);
   }
 
  private:
