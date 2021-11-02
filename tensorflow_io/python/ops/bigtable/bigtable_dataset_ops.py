@@ -6,8 +6,8 @@ from tensorflow.python.framework import dtypes
 import tensorflow as tf
 from tensorflow.python.data.ops import dataset_ops
 
-from tensorflow_io.python.ops.bigtable.bigtable_row_set import from_rows_or_ranges, RowSet, intersect
-from tensorflow_io.python.ops.bigtable.bigtable_row_range import infinite, right_open
+from tensorflow_io.python.ops.bigtable.bigtable_row_set import from_rows_or_ranges, RowSet
+from tensorflow_io.python.ops.bigtable.bigtable_row_range import infinite
 
 
 class BigtableClient:
