@@ -121,8 +121,8 @@ class Iterator : public DatasetIterator<Dataset> {
     VLOG(1) << "getting row";
     const auto& row = *it_;
     if (!row.ok()) {
-      VLOG(1) << row.status().message();
-      _exit(1);
+      LOG(ERROR) << row.status().message();
+      return errors::OutOfRange("Failed to get row.");
     }
     for (const auto& cell : row.value().cells()) {
       std::pair<const std::string&, const std::string&> key(
@@ -308,13 +308,13 @@ class BigtableRowsetResource : public ResourceBase {
 
   ~BigtableRowsetResource() { VLOG(1) << "BigtableRowsetResource dtor"; }
 
-  std::string PrintRowSet() {
+  std::string ToString() const {
     std::string res;
     google::protobuf::TextFormat::PrintToString(row_set_.as_proto(), &res);
     return res;
   }
 
-  void AppendStr(std::string const& row_key) { row_set_.Append(row_key); }
+  void AppendRow(std::string const& row_key) { row_set_.Append(row_key); }
   void AppendRowRange(cbt::RowRange const& row_range) {
     row_set_.Append(row_range);
   }
@@ -322,21 +322,24 @@ class BigtableRowsetResource : public ResourceBase {
     return row_set_.Intersect(row_range);
   }
 
-  string DebugString() const override { return "BigtableRowsetResource"; }
+  string DebugString() const override {
+    return "BigtableRowsetResource:{" + ToString() + "}";
+  }
 
+ private:
   cbt::RowSet row_set_;
 };
 
 class BigtableRowRangeResource : public ResourceBase {
  public:
-  explicit BigtableRowRangeResource(cbt::RowRange const& row_range)
+  explicit BigtableRowRangeResource(cbt::RowRange row_range)
       : row_range_(std::move(row_range)) {
     VLOG(1) << "BigtableRowsetResource ctor";
   }
 
   ~BigtableRowRangeResource() { VLOG(1) << "BigtableRowsetResource dtor"; }
 
-  std::string PrintRowRange() {
+  std::string ToString() const {
     std::string res;
     google::protobuf::TextFormat::PrintToString(row_range_.as_proto(), &res);
     return res;
@@ -344,15 +347,18 @@ class BigtableRowRangeResource : public ResourceBase {
 
   cbt::RowRange& RowRange() { return row_range_; }
 
-  string DebugString() const override { return "BigtableRowRangeResource"; }
+  string DebugString() const override {
+    return "BigtableRowRangeResource:{" + ToString() + "}";
+  }
 
+ private:
   cbt::RowRange row_range_;
 };
 
 template <typename T>
-class MutableResourceOpKernel : public OpKernel {
+class OpKernelCreatingResource : public OpKernel {
  public:
-  explicit MutableResourceOpKernel(OpKernelConstruction* context)
+  explicit OpKernelCreatingResource(OpKernelConstruction* context)
       : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override TF_LOCKS_EXCLUDED(mu_) {
@@ -361,7 +367,7 @@ class MutableResourceOpKernel : public OpKernel {
     OP_REQUIRES_OK(context, cinfo.Init(mgr, def()));
 
     T* resource;
-    CreateResource(&resource);
+    OP_REQUIRES_OK(context, CreateResource(&resource));
 
     OP_REQUIRES_OK(context,
                    mgr->Create<T>(cinfo.container(), cinfo.name(), resource));
@@ -377,10 +383,10 @@ class MutableResourceOpKernel : public OpKernel {
 };
 
 class BigtableEmptyRowRangeOp
-    : public MutableResourceOpKernel<BigtableRowRangeResource> {
+    : public OpKernelCreatingResource<BigtableRowRangeResource> {
  public:
   explicit BigtableEmptyRowRangeOp(OpKernelConstruction* ctx)
-      : MutableResourceOpKernel<BigtableRowRangeResource>(ctx) {
+      : OpKernelCreatingResource<BigtableRowRangeResource>(ctx) {
     VLOG(1) << "BigtableEmptyRowRangeOp ctor ";
   }
 
@@ -399,10 +405,10 @@ REGISTER_KERNEL_BUILDER(Name("BigtableEmptyRowRange").Device(DEVICE_CPU),
                         BigtableEmptyRowRangeOp);
 
 class BigtableRowRangeOp
-    : public MutableResourceOpKernel<BigtableRowRangeResource> {
+    : public OpKernelCreatingResource<BigtableRowRangeResource> {
  public:
   explicit BigtableRowRangeOp(OpKernelConstruction* ctx)
-      : MutableResourceOpKernel<BigtableRowRangeResource>(ctx) {
+      : OpKernelCreatingResource<BigtableRowRangeResource>(ctx) {
     VLOG(1) << "BigtableRowRangeOp ctor ";
     OP_REQUIRES_OK(ctx, ctx->GetAttr("left_row_key", &left_row_key_));
     OP_REQUIRES_OK(ctx, ctx->GetAttr("left_open", &left_open_));
@@ -447,8 +453,7 @@ class BigtableRowRangeOp
           cbt::RowRange::LeftOpen(left_row_key_, right_row_key_));
       return Status::OK();
     }
-    // will never reach this;
-    throw std::exception();
+    return errors::Internal("Reached impossible branch.");
   }
 
  private:
@@ -473,12 +478,11 @@ class BigtablePrintRowRangeOp : public OpKernel {
                    GetResourceFromContext(context, "resource", &resource));
     core::ScopedUnref unref(resource);
 
-    // Create an output tensor
     Tensor* output_tensor = NULL;
     OP_REQUIRES_OK(context, context->allocate_output(0, {1}, &output_tensor));
     auto output_v = output_tensor->tensor<tstring, 1>();
 
-    output_v(0) = resource->PrintRowRange();
+    output_v(0) = resource->ToString();
   }
 
  private:
@@ -489,10 +493,10 @@ REGISTER_KERNEL_BUILDER(Name("BigtablePrintRowRange").Device(DEVICE_CPU),
                         BigtablePrintRowRangeOp);
 
 class BigtableEmptyRowsetOp
-    : public MutableResourceOpKernel<BigtableRowsetResource> {
+    : public OpKernelCreatingResource<BigtableRowsetResource> {
  public:
   explicit BigtableEmptyRowsetOp(OpKernelConstruction* ctx)
-      : MutableResourceOpKernel<BigtableRowsetResource>(ctx) {
+      : OpKernelCreatingResource<BigtableRowsetResource>(ctx) {
     VLOG(1) << "BigtableEmptyRowsetOp ctor ";
   }
 
@@ -526,7 +530,7 @@ class BigtablePrintRowsetOp : public OpKernel {
     OP_REQUIRES_OK(context, context->allocate_output(0, {1}, &output_tensor));
     auto output_v = output_tensor->tensor<tstring, 1>();
 
-    output_v(0) = resource->PrintRowSet();
+    output_v(0) = resource->ToString();
   }
 
  private:
@@ -536,9 +540,9 @@ class BigtablePrintRowsetOp : public OpKernel {
 REGISTER_KERNEL_BUILDER(Name("BigtablePrintRowset").Device(DEVICE_CPU),
                         BigtablePrintRowsetOp);
 
-class BigtableRowsetAppendStrOp : public OpKernel {
+class BigtableRowsetAppendRowOp : public OpKernel {
  public:
-  explicit BigtableRowsetAppendStrOp(OpKernelConstruction* context)
+  explicit BigtableRowsetAppendRowOp(OpKernelConstruction* context)
       : OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("row_key", &row_key_));
   }
@@ -549,7 +553,7 @@ class BigtableRowsetAppendStrOp : public OpKernel {
                    GetResourceFromContext(context, "resource", &resource));
     core::ScopedUnref unref(resource);
 
-    resource->AppendStr(row_key_);
+    resource->AppendRow(row_key_);
   }
 
  private:
@@ -557,8 +561,8 @@ class BigtableRowsetAppendStrOp : public OpKernel {
   std::string row_key_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("BigtableRowsetAppendStr").Device(DEVICE_CPU),
-                        BigtableRowsetAppendStrOp);
+REGISTER_KERNEL_BUILDER(Name("BigtableRowsetAppendRow").Device(DEVICE_CPU),
+                        BigtableRowsetAppendRowOp);
 
 class BigtableRowsetAppendRowRangeOp : public OpKernel {
  public:
@@ -589,10 +593,10 @@ REGISTER_KERNEL_BUILDER(Name("BigtableRowsetAppendRowRange").Device(DEVICE_CPU),
                         BigtableRowsetAppendRowRangeOp);
 
 class BigtablePrefixRowRangeOp
-    : public MutableResourceOpKernel<BigtableRowRangeResource> {
+    : public OpKernelCreatingResource<BigtableRowRangeResource> {
  public:
   explicit BigtablePrefixRowRangeOp(OpKernelConstruction* ctx)
-      : MutableResourceOpKernel<BigtableRowRangeResource>(ctx) {
+      : OpKernelCreatingResource<BigtableRowRangeResource>(ctx) {
     VLOG(1) << "BigtablePrefixRowRangeOp ctor ";
     OP_REQUIRES_OK(ctx, ctx->GetAttr("prefix_str", &prefix_str_));
   }

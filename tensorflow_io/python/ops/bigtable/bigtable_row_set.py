@@ -30,7 +30,7 @@ class RowSet:
 
     def append(self, row_or_range):
         if isinstance(row_or_range, str):
-            core_ops.bigtable_rowset_append_str(self._impl, row_or_range)
+            core_ops.bigtable_rowset_append_row(self._impl, row_or_range)
         else:
             core_ops.bigtable_rowset_append_row_range(
                 self._impl, row_or_range._impl)
