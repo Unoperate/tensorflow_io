@@ -150,12 +150,8 @@ class Iterator : public DatasetIterator<Dataset> {
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
         table_(this->dataset()->client_resource().CreateTable(table_id)),
         reader_(this->table_.ReadRows(
-<<<<<<< HEAD
             this->dataset()->row_set_resource()->row_set(),
             // cbt::RowRange::InfiniteRange(),
-=======
-            this->dataset()->row_set_resource().RowSet(),
->>>>>>> c81fd9a... code cleanup 1
             cbt::Filter::Chain(CreateColumnsFilter(columns_),
                                cbt::Filter::Latest(1)))),
         it_(this->reader_.begin()),
@@ -300,11 +296,10 @@ class Dataset : public DatasetBase {
   std::unique_ptr<IteratorBase> MakeIteratorInternal(
       const std::string& prefix) const override {
     VLOG(1) << "MakeIteratorInternal. table=" << table_id_;
-    Iterator<Dataset>* iter = new Iterator<Dataset>(
+    return absl::make_unique<Iterator<Dataset>>(
         typename DatasetIterator<Dataset>::Params{
             this, strings::StrCat(prefix, "::BigtableDataset")},
         table_id_, columns_);
-    return std::unique_ptr<Iterator<Dataset>>(iter);
   }
 
   const DataTypeVector& output_dtypes() const override { return dtypes_; }
@@ -318,11 +313,7 @@ class Dataset : public DatasetBase {
   }
 
   BigtableClientResource& client_resource() const { return client_resource_; }
-<<<<<<< HEAD
-  io::BigtableRowSetResource* row_set_resource() const { return row_set_resource_; }
-=======
-  BigtableRowsetResource& row_set_resource() const { return row_set_resource_; }
->>>>>>> c81fd9a... code cleanup 1
+  io::BigtableRowsetResource& row_set_resource() const { return row_set_resource_; }
 
  protected:
   Status AsGraphDefInternal(SerializationContext* ctx,
@@ -336,11 +327,7 @@ class Dataset : public DatasetBase {
 
  private:
   BigtableClientResource& client_resource_;
-<<<<<<< HEAD
   io::BigtableRowSetResource* row_set_resource_;
-=======
-  BigtableRowsetResource& row_set_resource_;
->>>>>>> c81fd9a... code cleanup 1
   const std::string table_id_;
   const std::vector<std::string> columns_;
   DataTypeVector dtypes_;
@@ -444,17 +431,18 @@ class BigtableSampleRowSetsOp : public OpKernel {
     if (!start_key.empty()) {
       tablets.emplace_back(start_key, "");
     }
-    tablets.erase(std::remove_if(
-                      tablets.begin(), tablets.end(),
-                      [row_set_resource](std::pair<std::string, std::string> const& p) {
-                        return !RowSetIntersectsRange(row_set_resource->row_set(), p.first,
-                                                      p.second);
-                      }),
-                  tablets.end());
+    tablets.erase(
+        std::remove_if(
+            tablets.begin(), tablets.end(),
+            [row_set_resource](std::pair<std::string, std::string> const& p) {
+              return !RowSetIntersectsRange(row_set_resource->row_set(), p.first,
+                                            p.second);
+            }),
+        tablets.end());
 
-    VLOG(1) << "got table of tablets of size:" << tablets.size();
+    VLOG(1) << "got array of tablets of size:" << tablets.size();
 
-    size_t output_size = std::min(tablets.size(), (size_t) num_parallel_calls_);
+    size_t output_size = std::min(tablets.size(), (size_t)num_parallel_calls_);
 
     Tensor* output_tensor = NULL;
     OP_REQUIRES_OK(context, context->allocate_output(0, {(long)output_size, 2},
