@@ -150,8 +150,12 @@ class Iterator : public DatasetIterator<Dataset> {
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
         table_(this->dataset()->client_resource().CreateTable(table_id)),
         reader_(this->table_.ReadRows(
+<<<<<<< HEAD
             this->dataset()->row_set_resource()->row_set(),
             // cbt::RowRange::InfiniteRange(),
+=======
+            this->dataset()->row_set_resource().RowSet(),
+>>>>>>> c81fd9a... code cleanup 1
             cbt::Filter::Chain(CreateColumnsFilter(columns_),
                                cbt::Filter::Latest(1)))),
         it_(this->reader_.begin()),
@@ -286,7 +290,7 @@ class Dataset : public DatasetBase {
           std::vector<std::string> columns)
       : DatasetBase(DatasetContext(ctx)),
         client_resource_(*client_resource),
-        row_set_resource_(row_set_resource),
+        row_set_resource_(*row_set_resource),
         table_id_(table_id),
         columns_(columns) {
     dtypes_.push_back(DT_STRING);
@@ -314,7 +318,11 @@ class Dataset : public DatasetBase {
   }
 
   BigtableClientResource& client_resource() const { return client_resource_; }
+<<<<<<< HEAD
   io::BigtableRowSetResource* row_set_resource() const { return row_set_resource_; }
+=======
+  BigtableRowsetResource& row_set_resource() const { return row_set_resource_; }
+>>>>>>> c81fd9a... code cleanup 1
 
  protected:
   Status AsGraphDefInternal(SerializationContext* ctx,
@@ -328,7 +336,11 @@ class Dataset : public DatasetBase {
 
  private:
   BigtableClientResource& client_resource_;
+<<<<<<< HEAD
   io::BigtableRowSetResource* row_set_resource_;
+=======
+  BigtableRowsetResource& row_set_resource_;
+>>>>>>> c81fd9a... code cleanup 1
   const std::string table_id_;
   const std::vector<std::string> columns_;
   DataTypeVector dtypes_;
@@ -414,19 +426,12 @@ class BigtableSampleRowSetsOp : public OpKernel {
     OP_REQUIRES_OK(
         context, GetResourceFromContext(context, "row_set", &row_set_resource));
     core::ScopedUnref unref_row_set(row_set_resource);
-    VLOG(1) << "BigtableSampleRowSetsOp got resources ";
 
     auto table = client_resource->CreateTable(table_id_);
-    VLOG(1) << "created table";
     auto maybe_sample_row_keys = table.SampleRows();
-    VLOG(1) << "sample rows";
     if (!maybe_sample_row_keys.ok())
       throw std::runtime_error(maybe_sample_row_keys.status().message());
     auto& sample_row_keys = maybe_sample_row_keys.value();
-    VLOG(1) << "got row row_keys";
-
-    cbt::RowSet const& row_set = row_set_resource->row_set();
-    VLOG(1) << "got row_set";
 
     std::vector<std::pair<std::string, std::string>> tablets;
 
@@ -441,37 +446,28 @@ class BigtableSampleRowSetsOp : public OpKernel {
     }
     tablets.erase(std::remove_if(
                       tablets.begin(), tablets.end(),
-                      [&row_set](std::pair<std::string, std::string> const& p) {
-                        return !RowSetIntersectsRange(row_set, p.first,
+                      [row_set_resource](std::pair<std::string, std::string> const& p) {
+                        return !RowSetIntersectsRange(row_set_resource->row_set(), p.first,
                                                       p.second);
                       }),
                   tablets.end());
 
     VLOG(1) << "got table of tablets of size:" << tablets.size();
 
-    long output_size = std::min((int)tablets.size(), num_parallel_calls_);
-
-    VLOG(1) << ", allocating output {" << output_size << ",2}";
+    size_t output_size = std::min(tablets.size(), (size_t) num_parallel_calls_);
 
     Tensor* output_tensor = NULL;
     OP_REQUIRES_OK(context, context->allocate_output(0, {(long)output_size, 2},
                                                      &output_tensor));
     auto output_v = output_tensor->tensor<tstring, 2>();
 
-    for (int i = 0; i < output_size; i++) {
+    for (size_t i = 0; i < output_size; i++) {
       size_t start_idx = GetWorkerStartIndex(tablets.size(), output_size, i);
       size_t next_worker_start_idx =
           GetWorkerStartIndex(tablets.size(), output_size, i + 1);
       size_t end_idx = next_worker_start_idx - 1;
-
-      VLOG(1) << "for i=" << i << " getting share " << start_idx << ":"
-              << end_idx;
-
       start_key = tablets.at(start_idx).first;
       std::string end_key = tablets.at(end_idx).second;
-
-      VLOG(1) << "for i=" << i << " got range [" << start_key << "," << end_key
-              << "]";
       output_v(i, 0) = start_key;
       output_v(i, 1) = end_key;
     }
