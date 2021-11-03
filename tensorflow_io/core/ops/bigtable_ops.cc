@@ -103,16 +103,6 @@ REGISTER_OP("BigtableRowsetIntersectTensor")
     .SetShapeFn(shape_inference::UnchangedShape);
 
 
-REGISTER_OP("BigtableSampleRowKeys")
-    .Input("client: resource")
-    .Attr("table_id: string")
-    .Output("samples: string")
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext* c) {
-      c->set_output(0, c->Vector(c->UnknownDim()));
-      return tensorflow::Status::OK();
-    });
-
-
 REGISTER_OP("BigtableSampleRowSets")
     .Input("client: resource")
     .Input("row_set: resource")

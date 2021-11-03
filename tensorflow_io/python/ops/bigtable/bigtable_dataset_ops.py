@@ -36,11 +36,7 @@ class BigtableTable:
         return _BigtableDataset(self._client_resource, self._table_id, columns, row_set)
     
     def parallel_read_rows(self, columns: List[str], num_parallel_calls=1, row_set: RowSet=from_rows_or_ranges(infinite())):
-        print("asdadsasddsadsadsada")
-        print("getting samples")
         samples = core_ops.bigtable_sample_row_sets(self._client_resource, row_set._impl, self._table_id, num_parallel_calls)
-        print("$"*50)
-        print("got samples")
         samples_ds = dataset_ops.Dataset.from_tensor_slices(samples)
         def map_func(sample):
             rs = RowSet(core_ops.bigtable_rowset_intersect_tensor(row_set._impl, sample))
