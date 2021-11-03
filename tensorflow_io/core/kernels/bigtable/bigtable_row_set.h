@@ -50,6 +50,10 @@ class BigtableRowSetResource : public ResourceBase {
     return row_set_.Intersect(row_range);
   }
 
+  google::cloud::bigtable::RowSet const& row_set(){
+      return row_set_;
+  }
+
   string DebugString() const override {
     return "BigtableRowSetResource:{" + ToString() + "}";
   }

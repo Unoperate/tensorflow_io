@@ -83,8 +83,8 @@ class BigtableClientResource : public ResourceBase {
   explicit BigtableClientResource(const std::string& project_id,
                                   const std::string& instance_id)
       : data_client_(CreateDataClient(project_id, instance_id)) {
-          VLOG(1) << "BigtableClientResource ctor";
-      }
+    VLOG(1) << "BigtableClientResource ctor";
+  }
 
   cbt::Table CreateTable(const std::string& table_id) {
     VLOG(1) << "CreateTable";
@@ -105,35 +105,6 @@ class BigtableClientResource : public ResourceBase {
                                         cbt::ClientOptions());
   }
   std::shared_ptr<cbt::DataClient> data_client_;
-};
-
-class BigtableRowsetResource : public ResourceBase {
- public:
-  explicit BigtableRowsetResource(cbt::RowSet const& row_set) : row_set_(row_set){
-    VLOG(1) << "BigtableRowsetResource ctor";
-  }
-
-  ~BigtableRowsetResource() { VLOG(1) << "BigtableRowsetResource dtor"; }
-
-  std::string PrintRowSet() {
-    std::string res;
-    google::protobuf::TextFormat::PrintToString(row_set_.as_proto(), &res);
-    return res;
-  }
-
-  void AppendStr(std::string const& row_key) { row_set_.Append(row_key); }
-  void AppendRowRange(cbt::RowRange const& row_range) {
-    row_set_.Append(row_range);
-  }
-  cbt::RowSet Intersect(cbt::RowRange const& row_range) {
-    return row_set_.Intersect(row_range);
-  }
-
-  cbt::RowSet const& RowSet() { return row_set_; }
-
-  string DebugString() const override { return "BigtableRowsetResource"; }
-
-  cbt::RowSet row_set_;
 };
 
 class BigtableClientOp : public OpKernel {
@@ -179,14 +150,14 @@ class Iterator : public DatasetIterator<Dataset> {
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
         table_(this->dataset()->client_resource().CreateTable(table_id)),
         reader_(this->table_.ReadRows(
-                this->dataset()->row_set_resource()->RowSet(),
-                // cbt::RowRange::InfiniteRange(),
-                cbt::Filter::Chain(CreateColumnsFilter(columns_),
-                                   cbt::Filter::Latest(1)))),
+            this->dataset()->row_set_resource()->row_set(),
+            // cbt::RowRange::InfiniteRange(),
+            cbt::Filter::Chain(CreateColumnsFilter(columns_),
+                               cbt::Filter::Latest(1)))),
         it_(this->reader_.begin()),
         column_to_idx_(CreateColumnToIdxMap(columns_)) {
-            VLOG(1) << "DatasetIterator ctor";
-        }
+    VLOG(1) << "DatasetIterator ctor";
+  }
 
   Status GetNextInternal(IteratorContext* ctx, std::vector<Tensor>* out_tensors,
                          bool* end_of_sequence) override {
@@ -311,8 +282,8 @@ class Iterator : public DatasetIterator<Dataset> {
 class Dataset : public DatasetBase {
  public:
   Dataset(OpKernelContext* ctx, BigtableClientResource* client_resource,
-    BigtableRowsetResource* row_set_resource,
-          std::string table_id, std::vector<std::string> columns)
+          io::BigtableRowSetResource* row_set_resource, std::string table_id,
+          std::vector<std::string> columns)
       : DatasetBase(DatasetContext(ctx)),
         client_resource_(*client_resource),
         row_set_resource_(row_set_resource),
@@ -325,7 +296,7 @@ class Dataset : public DatasetBase {
   std::unique_ptr<IteratorBase> MakeIteratorInternal(
       const std::string& prefix) const override {
     VLOG(1) << "MakeIteratorInternal. table=" << table_id_;
-    Iterator<Dataset> * iter = new Iterator<Dataset>(
+    Iterator<Dataset>* iter = new Iterator<Dataset>(
         typename DatasetIterator<Dataset>::Params{
             this, strings::StrCat(prefix, "::BigtableDataset")},
         table_id_, columns_);
@@ -343,7 +314,7 @@ class Dataset : public DatasetBase {
   }
 
   BigtableClientResource& client_resource() const { return client_resource_; }
-  BigtableRowsetResource* row_set_resource() const { return row_set_resource_; }
+  io::BigtableRowSetResource* row_set_resource() const { return row_set_resource_; }
 
  protected:
   Status AsGraphDefInternal(SerializationContext* ctx,
@@ -357,7 +328,7 @@ class Dataset : public DatasetBase {
 
  private:
   BigtableClientResource& client_resource_;
-  BigtableRowsetResource* row_set_resource_;
+  io::BigtableRowSetResource* row_set_resource_;
   const std::string table_id_;
   const std::vector<std::string> columns_;
   DataTypeVector dtypes_;
@@ -378,12 +349,13 @@ class BigtableDatasetOp : public DatasetOpKernel {
                    GetResourceFromContext(ctx, "client", &client_resource));
     core::ScopedUnref unref_client(client_resource);
 
-    BigtableRowsetResource* row_set_resource;
+    io::BigtableRowSetResource* row_set_resource;
     OP_REQUIRES_OK(ctx,
                    GetResourceFromContext(ctx, "row_set", &row_set_resource));
     core::ScopedUnref row_set_resource_unref_(row_set_resource);
 
-    *output = new Dataset(ctx, client_resource,row_set_resource, table_id_, columns_);
+    *output = new Dataset(ctx, client_resource, row_set_resource, table_id_,
+                          columns_);
   }
 
  private:
@@ -393,6 +365,126 @@ class BigtableDatasetOp : public DatasetOpKernel {
 
 REGISTER_KERNEL_BUILDER(Name("BigtableDataset").Device(DEVICE_CPU),
                         BigtableDatasetOp);
+
+// Return the index of the tablet that a worker should start with. Each worker
+// start with their first tablet and finish on tablet before next worker's first
+// tablet. Each worker should get num_tablets/num_workers rounded down, plus at
+// most one. If we simply round up, then the last worker may be starved.
+// Consider an example where there's 100 tablets and 11 workers. If we give
+// round_up(100/11) to each one, then first 10 workers get 10 tablets each, and
+// the last one gets nothing.
+int GetWorkerStartIndex(size_t num_tablets, size_t num_workers,
+                        size_t worker_id) {
+  // if there's more workers than tablets, workers get one tablet each or less.
+  if (num_tablets <= num_workers) return std::min(num_tablets, worker_id);
+  // tablets_per_worker: minimum tablets each worker should obtain.
+  size_t const tablets_per_worker = num_tablets / num_workers;
+  // surplus_tablets: excess that has to be evenly distributed among the workers
+  // so that no worker gets more than tablets_per_worker + 1.
+  size_t const surplus_tablets = num_tablets % num_workers;
+  size_t const workers_before = worker_id;
+  return tablets_per_worker * workers_before +
+         std::min(surplus_tablets, workers_before);
+}
+
+bool RowSetIntersectsRange(cbt::RowSet const& row_set,
+                           std::string const& start_key,
+                           std::string const& end_key) {
+  auto range = cbt::RowRange::Range(start_key, end_key);
+  return !row_set.Intersect(range).IsEmpty();
+}
+
+class BigtableSampleRowSetsOp : public OpKernel {
+ public:
+  explicit BigtableSampleRowSetsOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
+    VLOG(1) << "BigtableSampleRowSetsOp ctor ";
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("table_id", &table_id_));
+    OP_REQUIRES_OK(ctx,
+                   ctx->GetAttr("num_parallel_calls", &num_parallel_calls_));
+  }
+
+  void Compute(OpKernelContext* context) override {
+    mutex_lock l(mu_);
+    BigtableClientResource* client_resource;
+    OP_REQUIRES_OK(context,
+                   GetResourceFromContext(context, "client", &client_resource));
+    core::ScopedUnref unref_client(client_resource);
+
+    io::BigtableRowSetResource* row_set_resource;
+    OP_REQUIRES_OK(
+        context, GetResourceFromContext(context, "row_set", &row_set_resource));
+    core::ScopedUnref unref_row_set(row_set_resource);
+    VLOG(1) << "BigtableSampleRowSetsOp got resources ";
+
+    auto table = client_resource->CreateTable(table_id_);
+    VLOG(1) << "created table";
+    auto maybe_sample_row_keys = table.SampleRows();
+    VLOG(1) << "sample rows";
+    if (!maybe_sample_row_keys.ok())
+      throw std::runtime_error(maybe_sample_row_keys.status().message());
+    auto& sample_row_keys = maybe_sample_row_keys.value();
+    VLOG(1) << "got row row_keys";
+
+    cbt::RowSet const& row_set = row_set_resource->row_set();
+    VLOG(1) << "got row_set";
+
+    std::vector<std::pair<std::string, std::string>> tablets;
+
+    std::string start_key;
+    for (auto& sample_row_key : sample_row_keys) {
+      auto& end_key = sample_row_key.row_key;
+      tablets.emplace_back(start_key, end_key);
+      start_key = std::move(end_key);
+    }
+    if (!start_key.empty()) {
+      tablets.emplace_back(start_key, "");
+    }
+    tablets.erase(std::remove_if(
+                      tablets.begin(), tablets.end(),
+                      [&row_set](std::pair<std::string, std::string> const& p) {
+                        return !RowSetIntersectsRange(row_set, p.first,
+                                                      p.second);
+                      }),
+                  tablets.end());
+
+    VLOG(1) << "got table of tablets of size:" << tablets.size();
+
+    long output_size = std::min((int)tablets.size(), num_parallel_calls_);
+
+    VLOG(1) << ", allocating output {" << output_size << ",2}";
+
+    Tensor* output_tensor = NULL;
+    OP_REQUIRES_OK(context, context->allocate_output(0, {(long)output_size, 2},
+                                                     &output_tensor));
+    auto output_v = output_tensor->tensor<tstring, 2>();
+
+    for (int i = 0; i < output_size; i++) {
+      size_t start_idx = GetWorkerStartIndex(tablets.size(), output_size, i);
+      size_t next_worker_start_idx =
+          GetWorkerStartIndex(tablets.size(), output_size, i + 1);
+      size_t end_idx = next_worker_start_idx - 1;
+
+      VLOG(1) << "for i=" << i << " getting share " << start_idx << ":"
+              << end_idx;
+
+      start_key = tablets.at(start_idx).first;
+      std::string end_key = tablets.at(end_idx).second;
+
+      VLOG(1) << "for i=" << i << " got range [" << start_key << "," << end_key
+              << "]";
+      output_v(i, 0) = start_key;
+      output_v(i, 1) = end_key;
+    }
+  }
+
+ private:
+  mutable mutex mu_;
+  std::string table_id_;
+  int num_parallel_calls_;
+};
+
+REGISTER_KERNEL_BUILDER(Name("BigtableSampleRowSets").Device(DEVICE_CPU),
+                        BigtableSampleRowSetsOp);
 
 }  // namespace
 }  // namespace data
