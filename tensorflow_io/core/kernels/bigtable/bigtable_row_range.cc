@@ -28,7 +28,7 @@ class BigtableEmptyRowRangeOp
   }
 
  private:
-  google::cloud::StatusOr<BigtableRowRangeResource*> CreateResource()
+  StatusOr<BigtableRowRangeResource*> CreateResource()
       TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
     return new BigtableRowRangeResource(cbt::RowRange::Empty());
   }
@@ -50,7 +50,7 @@ class BigtableRowRangeOp
   }
 
  private:
-  google::cloud::StatusOr<BigtableRowRangeResource*> CreateResource()
+  StatusOr<BigtableRowRangeResource*> CreateResource()
       TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
     VLOG(1) << "BigtableRowRangeOp constructing row_range:"
             << (left_open_ ? "(" : "[") << left_row_key_ << ":"
@@ -81,8 +81,8 @@ class BigtableRowRangeOp
       return new BigtableRowRangeResource(
           cbt::RowRange::LeftOpen(left_row_key_, right_row_key_));
     }
-    return google::cloud::Status(
-        google::cloud::StatusCode::kInternal,
+    return Status(
+        error::INTERNAL,
         "Reached impossible branch. Above clauses should cover all possible "
         "values of left_open_ and right_open_. left_open:" +
             std::to_string(left_open_) +

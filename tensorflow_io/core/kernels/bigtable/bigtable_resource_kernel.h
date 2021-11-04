@@ -40,25 +40,19 @@ class AbstractBigtableResourceOp : public OpKernel {
     ContainerInfo cinfo;
     OP_REQUIRES_OK(context, cinfo.Init(mgr, def()));
 
-    google::cloud::v1::StatusOr<T*> maybe_resource = CreateResource();
-    if (!maybe_resource.ok()) {
-      LOG(ERROR) << "erorr";
-      return;
-    }
+    StatusOr<T*> maybe_resource = CreateResource();
+    OP_REQUIRES_OK(context, maybe_resource.status());
 
-    T* resource = maybe_resource.value();
-    OP_REQUIRES_OK(context,
-                   mgr->Create<T>(cinfo.container(), cinfo.name(), resource));
+    OP_REQUIRES_OK(context, mgr->Create<T>(cinfo.container(), cinfo.name(),
+                                           maybe_resource.ValueOrDie()));
 
-    VLOG(1) << "outputting resource: " + resource->DebugString();
     OP_REQUIRES_OK(context, MakeResourceHandleToOutput(
                                 context, 0, cinfo.container(), cinfo.name(),
                                 TypeIndex::Make<T>()));
   }
 
  private:
-  virtual google::cloud::StatusOr<T*> CreateResource()
-      TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) = 0;
+  virtual StatusOr<T*> CreateResource() TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) = 0;
 };
 
 }  // namespace io

@@ -33,8 +33,8 @@ namespace io {
 
 class BigtableRowsetResource : public ResourceBase {
  public:
-  explicit BigtableRowsetResource(
-      google::cloud::bigtable::RowSet row_set) : row_set_(std::move(row_set)){
+  explicit BigtableRowsetResource(google::cloud::bigtable::RowSet row_set)
+      : row_set_(std::move(row_set)) {
     VLOG(1) << "BigtableRowsetResource ctor";
   }
 
