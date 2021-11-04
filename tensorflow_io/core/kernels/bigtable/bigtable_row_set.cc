@@ -28,14 +28,10 @@ class BigtableEmptyRowsetOp
   }
 
  private:
-  Status CreateResource(BigtableRowsetResource** resource)
-      TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
+  Status CreateResource(BigtableRowsetResource** resource) TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
     *resource = new BigtableRowsetResource(cbt::RowSet());
     return Status::OK();
   }
-
- private:
-  mutable mutex mu_;
 };
 
 REGISTER_KERNEL_BUILDER(Name("BigtableEmptyRowset").Device(DEVICE_CPU),
@@ -52,16 +48,12 @@ class BigtablePrintRowsetOp : public OpKernel {
                    GetResourceFromContext(context, "resource", &resource));
     core::ScopedUnref unref(resource);
 
-    // Create an output tensor
     Tensor* output_tensor = NULL;
     OP_REQUIRES_OK(context, context->allocate_output(0, {1}, &output_tensor));
     auto output_v = output_tensor->tensor<tstring, 1>();
 
     output_v(0) = resource->ToString();
   }
-
- private:
-  mutable mutex mu_;
 };
 
 REGISTER_KERNEL_BUILDER(Name("BigtablePrintRowset").Device(DEVICE_CPU),
@@ -84,7 +76,6 @@ class BigtableRowsetAppendRowOp : public OpKernel {
   }
 
  private:
-  mutable mutex mu_;
   std::string row_key_;
 };
 
@@ -97,6 +88,7 @@ class BigtableRowsetAppendRowRangeOp : public OpKernel {
       : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override {
+    mutex_lock lock(mu_);
     BigtableRowsetResource* row_set_resource;
     OP_REQUIRES_OK(context, GetResourceFromContext(context, "row_set_resource",
                                                    &row_set_resource));
@@ -129,15 +121,13 @@ class BigtablePrefixRowRangeOp
   }
 
  private:
-  Status CreateResource(BigtableRowRangeResource** resource)
-      TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
+  Status CreateResource(BigtableRowRangeResource** resource) TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
     *resource =
         new BigtableRowRangeResource(cbt::RowRange::Prefix(prefix_str_));
     return Status::OK();
   }
 
  private:
-  mutable mutex mu_;
   std::string prefix_str_;
 };
 
@@ -183,7 +173,6 @@ class BigtableRowsetIntersectOp : public OpKernel {
   }
 
  protected:
-  // Variables accessible from subclasses.
   mutex mu_;
   ContainerInfo cinfo_ TF_GUARDED_BY(mu_);
 };

@@ -33,9 +33,9 @@ namespace io {
 
 class BigtableRowsetResource : public ResourceBase {
  public:
-  explicit BigtableRowsetResource(google::cloud::bigtable::RowSet const& row_set) {
+  explicit BigtableRowsetResource(
+      google::cloud::bigtable::RowSet row_set) : row_set_(std::move(row_set)){
     VLOG(1) << "BigtableRowsetResource ctor";
-    row_set_ = std::move(row_set);
   }
 
   ~BigtableRowsetResource() { VLOG(1) << "BigtableRowsetResource dtor"; }
@@ -50,7 +50,8 @@ class BigtableRowsetResource : public ResourceBase {
   void AppendRowRange(google::cloud::bigtable::RowRange const& row_range) {
     row_set_.Append(row_range);
   }
-  google::cloud::bigtable::RowSet Intersect(google::cloud::bigtable::RowRange const& row_range) {
+  google::cloud::bigtable::RowSet Intersect(
+      google::cloud::bigtable::RowRange const& row_range) {
     return row_set_.Intersect(row_range);
   }
 

@@ -33,9 +33,6 @@ class BigtableEmptyRowRangeOp
     *resource = new BigtableRowRangeResource(cbt::RowRange::Empty());
     return Status::OK();
   }
-
- private:
-  mutable mutex mu_;
 };
 
 REGISTER_KERNEL_BUILDER(Name("BigtableEmptyRowRange").Device(DEVICE_CPU),
@@ -90,7 +87,11 @@ class BigtableRowRangeOp
           cbt::RowRange::LeftOpen(left_row_key_, right_row_key_));
       return Status::OK();
     }
-    return errors::Internal("Reached impossible branch.");
+    return errors::Internal(
+        "Reached impossible branch. Above clauses should cover all possible "
+        "values of left_open_ and right_open_. left_open:" +
+        std::to_string(left_open_) +
+        " right_open:" + std::to_string(right_open_));
   }
 
  private:
@@ -121,9 +122,6 @@ class BigtablePrintRowRangeOp : public OpKernel {
 
     output_v(0) = resource->ToString();
   }
-
- private:
-  mutable mutex mu_;
 };
 
 REGISTER_KERNEL_BUILDER(Name("BigtablePrintRowRange").Device(DEVICE_CPU),
