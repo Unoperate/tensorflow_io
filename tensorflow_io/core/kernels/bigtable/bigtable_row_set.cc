@@ -28,9 +28,8 @@ class BigtableEmptyRowsetOp
   }
 
  private:
-  Status CreateResource(BigtableRowsetResource** resource) TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
-    *resource = new BigtableRowsetResource(cbt::RowSet());
-    return Status::OK();
+  google::cloud::StatusOr<BigtableRowsetResource*> CreateResource() TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
+    return new BigtableRowsetResource(cbt::RowSet());
   }
 };
 
@@ -121,10 +120,8 @@ class BigtablePrefixRowRangeOp
   }
 
  private:
-  Status CreateResource(BigtableRowRangeResource** resource) TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
-    *resource =
-        new BigtableRowRangeResource(cbt::RowRange::Prefix(prefix_str_));
-    return Status::OK();
+  google::cloud::StatusOr<BigtableRowRangeResource*> CreateResource() TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
+    return new BigtableRowRangeResource(cbt::RowRange::Prefix(prefix_str_));
   }
 
  private:

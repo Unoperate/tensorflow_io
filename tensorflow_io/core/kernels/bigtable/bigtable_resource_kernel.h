@@ -35,24 +35,29 @@ class AbstractBigtableResourceOp : public OpKernel {
   explicit AbstractBigtableResourceOp(OpKernelConstruction* context)
       : OpKernel(context) {}
 
-  void Compute(OpKernelContext* context) override TF_LOCKS_EXCLUDED(mu_) {
+  void Compute(OpKernelContext* context) override {
     ResourceMgr* mgr = context->resource_manager();
     ContainerInfo cinfo;
     OP_REQUIRES_OK(context, cinfo.Init(mgr, def()));
 
-    T* resource;
-    OP_REQUIRES_OK(context, CreateResource(&resource));
+    google::cloud::v1::StatusOr<T*> maybe_resource = CreateResource();
+    if (!maybe_resource.ok()) {
+      LOG(ERROR) << "erorr";
+      return;
+    }
 
+    T* resource = maybe_resource.value();
     OP_REQUIRES_OK(context,
                    mgr->Create<T>(cinfo.container(), cinfo.name(), resource));
 
+    VLOG(1) << "outputting resource: " + resource->DebugString();
     OP_REQUIRES_OK(context, MakeResourceHandleToOutput(
                                 context, 0, cinfo.container(), cinfo.name(),
                                 TypeIndex::Make<T>()));
   }
 
  private:
-  virtual Status CreateResource(T** resource)
+  virtual google::cloud::StatusOr<T*> CreateResource()
       TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) = 0;
 };
 

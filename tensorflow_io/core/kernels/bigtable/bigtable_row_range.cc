@@ -28,10 +28,9 @@ class BigtableEmptyRowRangeOp
   }
 
  private:
-  Status CreateResource(BigtableRowRangeResource** resource)
+  google::cloud::StatusOr<BigtableRowRangeResource*> CreateResource()
       TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
-    *resource = new BigtableRowRangeResource(cbt::RowRange::Empty());
-    return Status::OK();
+    return new BigtableRowRangeResource(cbt::RowRange::Empty());
   }
 };
 
@@ -51,7 +50,7 @@ class BigtableRowRangeOp
   }
 
  private:
-  Status CreateResource(BigtableRowRangeResource** resource)
+  google::cloud::StatusOr<BigtableRowRangeResource*> CreateResource()
       TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
     VLOG(1) << "BigtableRowRangeOp constructing row_range:"
             << (left_open_ ? "(" : "[") << left_row_key_ << ":"
@@ -59,39 +58,35 @@ class BigtableRowRangeOp
 
     // both empty - infinite
     if (left_row_key_.empty() && right_row_key_.empty()) {
-      *resource = new BigtableRowRangeResource(cbt::RowRange::InfiniteRange());
-      return Status::OK();
+      return new BigtableRowRangeResource(cbt::RowRange::InfiniteRange());
     }
 
     // open
     if (left_open_ && right_open_) {
-      *resource = new BigtableRowRangeResource(
+      return new BigtableRowRangeResource(
           cbt::RowRange::Open(left_row_key_, right_row_key_));
-      return Status::OK();
     }
     // closed
     if (!left_open_ && !right_open_) {
-      *resource = new BigtableRowRangeResource(
+      return new BigtableRowRangeResource(
           cbt::RowRange::Closed(left_row_key_, right_row_key_));
-      return Status::OK();
     }
     // right_open
     if (!left_open_ && right_open_) {
-      *resource = new BigtableRowRangeResource(
+      return new BigtableRowRangeResource(
           cbt::RowRange::RightOpen(left_row_key_, right_row_key_));
-      return Status::OK();
     }
     // left_open
     if (left_open_ && !right_open_) {
-      *resource = new BigtableRowRangeResource(
+      return new BigtableRowRangeResource(
           cbt::RowRange::LeftOpen(left_row_key_, right_row_key_));
-      return Status::OK();
     }
-    return errors::Internal(
+    return google::cloud::Status(
+        google::cloud::StatusCode::kInternal,
         "Reached impossible branch. Above clauses should cover all possible "
         "values of left_open_ and right_open_. left_open:" +
-        std::to_string(left_open_) +
-        " right_open:" + std::to_string(right_open_));
+            std::to_string(left_open_) +
+            " right_open:" + std::to_string(right_open_));
   }
 
  private:

@@ -67,26 +67,23 @@ REGISTER_OP("BigtableRowRange")
     .SetIsStateful()
     .SetShapeFn(shape_inference::ScalarShape);
 
-
 REGISTER_OP("BigtablePrintRowRange")
     .Input("resource: resource")
     .Output("output: string")
-    .SetShapeFn(shape_inference::UnchangedShape);
+    .SetShapeFn(shape_inference::ScalarShape);
 
 REGISTER_OP("BigtablePrintRowset")
     .Input("resource: resource")
     .Output("output: string")
-    .SetShapeFn(shape_inference::UnchangedShape);
+    .SetShapeFn(shape_inference::ScalarShape);
 
 REGISTER_OP("BigtableRowsetAppendRow")
     .Attr("row_key: string")
-    .Input("resource: resource")
-    .SetShapeFn(shape_inference::UnchangedShape);
+    .Input("resource: resource");
 
 REGISTER_OP("BigtableRowsetAppendRowRange")
     .Input("row_set_resource: resource")
-    .Input("row_range_resource: resource")
-    .SetShapeFn(shape_inference::UnchangedShape);
+    .Input("row_range_resource: resource");
 
 REGISTER_OP("BigtableRowsetIntersect")
     .Attr("container: string = ''")
@@ -94,5 +91,5 @@ REGISTER_OP("BigtableRowsetIntersect")
     .Input("row_set_resource: resource")
     .Input("row_range_resource: resource")
     .Output("row_set: resource")
-    .SetShapeFn(shape_inference::UnchangedShape);
+    .SetShapeFn(shape_inference::ScalarShape);
 

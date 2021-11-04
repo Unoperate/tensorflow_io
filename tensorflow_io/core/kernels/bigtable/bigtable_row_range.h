@@ -34,10 +34,10 @@ class BigtableRowRangeResource : public ResourceBase {
  public:
   explicit BigtableRowRangeResource(google::cloud::bigtable::RowRange row_range)
       : row_range_(std::move(row_range)) {
-    VLOG(1) << "BigtableRowsetResource ctor";
+    VLOG(1) << "BigtableRowRangeResource ctor";
   }
 
-  ~BigtableRowRangeResource() { VLOG(1) << "BigtableRowsetResource dtor"; }
+  ~BigtableRowRangeResource() { VLOG(1) << "BigtableRowRangeResource dtor"; }
 
   std::string ToString() const {
     std::string res;

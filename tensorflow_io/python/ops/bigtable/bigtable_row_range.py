@@ -23,6 +23,7 @@ class RowRange:
         self._impl = impl
 
     def __repr__(self) -> str:
+        print(self._impl)
         return core_ops.bigtable_print_row_range(self._impl).numpy()[0].decode()
 
 
