@@ -26,19 +26,13 @@ limitations under the License.
 #include "tensorflow/core/framework/resource_mgr.h"
 #include "tensorflow/core/framework/resource_op_kernel.h"
 
-using ::tensorflow::DT_STRING;
-using ::tensorflow::PartialTensorShape;
-using ::tensorflow::Status;
-
-namespace cbt = ::google::cloud::bigtable;
-
 namespace tensorflow {
-namespace {
+namespace io {
 
 template <typename T>
-class OpKernelCreatingResource : public OpKernel {
+class AbstractBigtableResourceOp : public OpKernel {
  public:
-  explicit OpKernelCreatingResource(OpKernelConstruction* context)
+  explicit AbstractBigtableResourceOp(OpKernelConstruction* context)
       : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override TF_LOCKS_EXCLUDED(mu_) {
@@ -62,7 +56,7 @@ class OpKernelCreatingResource : public OpKernel {
       TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) = 0;
 };
 
-}  // namespace
+}  // namespace io
 }  // namespace tensorflow
 
 #endif /* BIGTABLE_RESOURCE_KERNEL_H */

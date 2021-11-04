@@ -12,48 +12,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
+#include "tensorflow_io/core/kernels/bigtable/bigtable_row_range.h"
 
-#ifndef BIGTABLE_ROW_RANGE_H
-#define BIGTABLE_ROW_RANGE_H
-
-#include "absl/memory/memory.h"
-#include "google/cloud/bigtable/table.h"
-#include "google/cloud/bigtable/table_admin.h"
-#include "tensorflow/core/framework/common_shape_fns.h"
-#include "tensorflow/core/framework/dataset.h"
-#include "tensorflow/core/framework/op.h"
-#include "tensorflow/core/framework/op_kernel.h"
-#include "tensorflow/core/framework/resource_mgr.h"
-#include "tensorflow/core/framework/resource_op_kernel.h"
-#include "tensorflow_io/core/kernels/bigtable/bigtable_resource_kernel.h"
+namespace cbt = ::google::cloud::bigtable;
 
 namespace tensorflow {
 namespace io {
-
-class BigtableRowRangeResource : public ResourceBase {
- public:
-  explicit BigtableRowRangeResource(google::cloud::bigtable::RowRange row_range)
-      : row_range_(std::move(row_range)) {
-    VLOG(1) << "BigtableRowsetResource ctor";
-  }
-
-  ~BigtableRowRangeResource() { VLOG(1) << "BigtableRowsetResource dtor"; }
-
-  std::string ToString() const {
-    std::string res;
-    google::protobuf::TextFormat::PrintToString(row_range_.as_proto(), &res);
-    return res;
-  }
-
-  google::cloud::bigtable::RowRange& row_range() { return row_range_; }
-
-  string DebugString() const override {
-    return "BigtableRowRangeResource:{" + ToString() + "}";
-  }
-
- private:
-  google::cloud::bigtable::RowRange row_range_;
-};
 
 class BigtableEmptyRowRangeOp
     : public AbstractBigtableResourceOp<BigtableRowRangeResource> {
@@ -66,7 +30,7 @@ class BigtableEmptyRowRangeOp
  private:
   Status CreateResource(BigtableRowRangeResource** resource)
       TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
-    *resource = new BigtableRowRangeResource(google::cloud::bigtable::RowRange::Empty());
+    *resource = new BigtableRowRangeResource(cbt::RowRange::Empty());
     return Status::OK();
   }
 
@@ -98,32 +62,32 @@ class BigtableRowRangeOp
 
     // both empty - infinite
     if (left_row_key_.empty() && right_row_key_.empty()) {
-      *resource = new BigtableRowRangeResource(google::cloud::bigtable::RowRange::InfiniteRange());
+      *resource = new BigtableRowRangeResource(cbt::RowRange::InfiniteRange());
       return Status::OK();
     }
 
     // open
     if (left_open_ && right_open_) {
       *resource = new BigtableRowRangeResource(
-          google::cloud::bigtable::RowRange::Open(left_row_key_, right_row_key_));
+          cbt::RowRange::Open(left_row_key_, right_row_key_));
       return Status::OK();
     }
     // closed
     if (!left_open_ && !right_open_) {
       *resource = new BigtableRowRangeResource(
-          google::cloud::bigtable::RowRange::Closed(left_row_key_, right_row_key_));
+          cbt::RowRange::Closed(left_row_key_, right_row_key_));
       return Status::OK();
     }
     // right_open
     if (!left_open_ && right_open_) {
       *resource = new BigtableRowRangeResource(
-          google::cloud::bigtable::RowRange::RightOpen(left_row_key_, right_row_key_));
+          cbt::RowRange::RightOpen(left_row_key_, right_row_key_));
       return Status::OK();
     }
     // left_open
     if (left_open_ && !right_open_) {
       *resource = new BigtableRowRangeResource(
-          google::cloud::bigtable::RowRange::LeftOpen(left_row_key_, right_row_key_));
+          cbt::RowRange::LeftOpen(left_row_key_, right_row_key_));
       return Status::OK();
     }
     return errors::Internal("Reached impossible branch.");
@@ -167,5 +131,3 @@ REGISTER_KERNEL_BUILDER(Name("BigtablePrintRowRange").Device(DEVICE_CPU),
 
 }  // namespace io
 }  // namespace tensorflow
-
-#endif /* BIGTABLE_ROW_RANGE_H */
