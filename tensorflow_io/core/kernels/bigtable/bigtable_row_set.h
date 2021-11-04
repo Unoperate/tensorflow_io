@@ -16,15 +16,10 @@ limitations under the License.
 #ifndef BIGTABLE_ROW_SET_H
 #define BIGTABLE_ROW_SET_H
 
-#include "absl/memory/memory.h"
+
 #include "google/cloud/bigtable/table.h"
-#include "google/cloud/bigtable/table_admin.h"
-#include "tensorflow/core/framework/common_shape_fns.h"
-#include "tensorflow/core/framework/dataset.h"
-#include "tensorflow/core/framework/op.h"
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/resource_mgr.h"
-#include "tensorflow/core/framework/resource_op_kernel.h"
 #include "tensorflow_io/core/kernels/bigtable/bigtable_resource_kernel.h"
 #include "tensorflow_io/core/kernels/bigtable/bigtable_row_range.h"
 

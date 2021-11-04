@@ -23,10 +23,6 @@ limitations under the License.
 #include "tensorflow/core/framework/resource_op_kernel.h"
 #include "tensorflow_io/core/kernels/bigtable/bigtable_row_set.h"
 
-using ::tensorflow::DT_STRING;
-using ::tensorflow::PartialTensorShape;
-using ::tensorflow::Status;
-
 namespace cbt = ::google::cloud::bigtable;
 
 namespace tensorflow {
