@@ -30,7 +30,8 @@ namespace tensorflow {
 namespace data {
 namespace {
 
-tensorflow::error::Code GoogleCloudErrorCodeToTfErrorCode(::google::cloud::StatusCode code) {
+tensorflow::error::Code GoogleCloudErrorCodeToTfErrorCode(
+    ::google::cloud::StatusCode code) {
   switch (code) {
     case ::google::cloud::StatusCode::kOk:
       return ::tensorflow::error::OK;
@@ -73,9 +74,9 @@ Status GoogleCloudStatusToTfStatus(const ::google::cloud::Status& status) {
   if (status.ok()) {
     return Status::OK();
   }
-  return Status(GoogleCloudErrorCodeToTfErrorCode(status.code()),
-                strings::StrCat("Error reading from Cloud Bigtable: ",
-                                status.message()));
+  return Status(
+      GoogleCloudErrorCodeToTfErrorCode(status.code()),
+      strings::StrCat("Error reading from Cloud Bigtable: ", status.message()));
 }
 
 class BigtableClientResource : public ResourceBase {
@@ -313,7 +314,9 @@ class Dataset : public DatasetBase {
   }
 
   BigtableClientResource& client_resource() const { return client_resource_; }
-  io::BigtableRowSetResource& row_set_resource() const { return row_set_resource_; }
+  io::BigtableRowSetResource& row_set_resource() const {
+    return row_set_resource_;
+  }
 
  protected:
   Status AsGraphDefInternal(SerializationContext* ctx,
@@ -435,8 +438,8 @@ class BigtableSampleRowSetsOp : public OpKernel {
         std::remove_if(
             tablets.begin(), tablets.end(),
             [row_set_resource](std::pair<std::string, std::string> const& p) {
-              return !RowSetIntersectsRange(row_set_resource->row_set(), p.first,
-                                            p.second);
+              return !RowSetIntersectsRange(row_set_resource->row_set(),
+                                            p.first, p.second);
             }),
         tablets.end());
 

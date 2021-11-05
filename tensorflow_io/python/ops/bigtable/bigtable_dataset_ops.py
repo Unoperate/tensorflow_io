@@ -37,7 +37,9 @@ class BigtableTable:
         self._client_resource = client_resource
 
     def read_rows(self, columns: List[str], row_set: RowSet):
-        return _BigtableDataset(self._client_resource, self._table_id, columns, row_set)
+        return _BigtableDataset(
+            self._client_resource, self._table_id, columns, row_set
+        )
 
     def parallel_read_rows(
         self,
@@ -46,13 +48,18 @@ class BigtableTable:
         row_set: RowSet = from_rows_or_ranges(infinite()),
     ):
         samples = core_ops.bigtable_sample_row_sets(
-            self._client_resource, row_set._impl, self._table_id, num_parallel_calls
+            self._client_resource,
+            row_set._impl,
+            self._table_id,
+            num_parallel_calls,
         )
         samples_ds = dataset_ops.Dataset.from_tensor_slices(samples)
 
         def map_func(sample):
             rs = RowSet(
-                core_ops.bigtable_row_set_intersect_tensor(row_set._impl, sample)
+                core_ops.bigtable_row_set_intersect_tensor(
+                    row_set._impl, sample
+                )
             )
             return self.read_rows(columns, rs)
 
@@ -69,7 +76,11 @@ class _BigtableDataset(dataset_ops.DatasetSource):
     """_BigtableDataset represents a dataset that retrieves keys and values."""
 
     def __init__(
-        self, client_resource, table_id: str, columns: List[str], row_set: RowSet
+        self,
+        client_resource,
+        table_id: str,
+        columns: List[str],
+        row_set: RowSet,
     ):
         self._table_id = table_id
         self._columns = columns

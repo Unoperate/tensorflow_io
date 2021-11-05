@@ -88,9 +88,12 @@ class BigtableReadTest(test.TestCase):
             ["fam1:col1", "fam2:col2"],
         )
 
-        row_s = row_set.from_rows_or_ranges(row_range.closed_range("row000", "row009"))
+        row_s = row_set.from_rows_or_ranges(
+            row_range.closed_range("row000", "row009")
+        )
 
         read_rows = [
-            r for r in table.read_rows(["fam1:col1", "fam2:col2"], row_set=row_s)
+            r
+            for r in table.read_rows(["fam1:col1", "fam2:col2"], row_set=row_s)
         ]
         self.assertEqual(len(read_rows), 10)
