@@ -120,6 +120,6 @@ class TestRowSet(test.TestCase):
         r_range = row_range.right_open("row2", "row3")
         regular_intersect = row_set.intersect(r_set, r_range)
         tensor_intersect = row_set.RowSet(
-            core_ops.bigtable_rowset_intersect_tensor(r_set._impl, tensor)
+            core_ops.bigtable_row_set_intersect_tensor(r_set._impl, tensor)
         )
         self.assertEqual(repr(regular_intersect), repr(tensor_intersect))
