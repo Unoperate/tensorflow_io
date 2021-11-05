@@ -154,17 +154,11 @@ class BigtableRowsetIntersectOp : public OpKernel {
                                           &row_range_resource));
     core::ScopedUnref row_range_resource_unref(row_range_resource);
 
-    BigtableRowsetResource* result_resource;
-    OP_REQUIRES_OK(
-        context,
-        mgr->LookupOrCreate<BigtableRowsetResource>(
-            cinfo_.container(), cinfo_.name(), &result_resource,
-            [this, row_set_resource, row_range_resource](
-                BigtableRowsetResource** ret) TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) {
-              *ret = new BigtableRowsetResource(
+    BigtableRowsetResource* result_resource = new BigtableRowsetResource(
                   row_set_resource->Intersect(row_range_resource->row_range()));
-              return Status::OK();
-            }));
+
+    OP_REQUIRES_OK(context, mgr->Create<BigtableRowsetResource>(
+                            cinfo_.container(), cinfo_.name(), result_resource));
 
     OP_REQUIRES_OK(context, MakeResourceHandleToOutput(
                                 context, 0, cinfo_.container(), cinfo_.name(),
