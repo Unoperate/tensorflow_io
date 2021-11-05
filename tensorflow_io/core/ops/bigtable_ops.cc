@@ -44,7 +44,7 @@ REGISTER_OP("BigtableEmptyRowSet")
 REGISTER_OP("BigtableEmptyRowRange")
     .Attr("container: string = ''")
     .Attr("shared_name: string = ''")
-    .Output("row_range_resource: resource")
+    .Output("row_range: resource")
     .SetIsStateful()
     .SetShapeFn(shape_inference::ScalarShape);
 
@@ -69,12 +69,12 @@ REGISTER_OP("BigtableRowRange")
 
 REGISTER_OP("BigtablePrintRowRange")
     .Input("row_range: resource")
-    .Output("output: string")
+    .Output("row_range_str: string")
     .SetShapeFn(shape_inference::ScalarShape);
 
 REGISTER_OP("BigtablePrintRowSet")
     .Input("row_set: resource")
-    .Output("output: string")
+    .Output("row_set_str: string")
     .SetShapeFn(shape_inference::ScalarShape);
 
 REGISTER_OP("BigtableRowSetAppendRow")
