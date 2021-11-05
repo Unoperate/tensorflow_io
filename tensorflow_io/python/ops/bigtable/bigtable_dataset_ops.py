@@ -6,7 +6,11 @@ from tensorflow.python.framework import dtypes
 import tensorflow as tf
 from tensorflow.python.data.ops import dataset_ops
 
-from tensorflow_io.python.ops.bigtable.bigtable_row_set import from_rows_or_ranges, RowSet
+from tensorflow_io.python.ops.bigtable.bigtable_row_set import (
+    from_rows_or_ranges,
+    RowSet,
+    intersect,
+)
 from tensorflow_io.python.ops.bigtable.bigtable_row_range import infinite
 
 
@@ -34,13 +38,23 @@ class BigtableTable:
 
     def read_rows(self, columns: List[str], row_set: RowSet):
         return _BigtableDataset(self._client_resource, self._table_id, columns, row_set)
-    
-    def parallel_read_rows(self, columns: List[str], num_parallel_calls=1, row_set: RowSet=from_rows_or_ranges(infinite())):
-        samples = core_ops.bigtable_sample_row_sets(self._client_resource, row_set._impl, self._table_id, num_parallel_calls)
+
+    def parallel_read_rows(
+        self,
+        columns: List[str],
+        num_parallel_calls=1,
+        row_set: RowSet = from_rows_or_ranges(infinite()),
+    ):
+        samples = core_ops.bigtable_sample_row_sets(
+            self._client_resource, row_set._impl, self._table_id, num_parallel_calls
+        )
         samples_ds = dataset_ops.Dataset.from_tensor_slices(samples)
+
         def map_func(sample):
-            rs = RowSet(core_ops.bigtable_rowset_intersect_tensor(row_set._impl, sample))
-            return self.read_rows(columns,rs)
+            rs = RowSet(
+                core_ops.bigtable_rowset_intersect_tensor(row_set._impl, sample)
+            )
+            return self.read_rows(columns, rs)
 
         return samples_ds.interleave(
             map_func=map_func,
@@ -51,12 +65,12 @@ class BigtableTable:
         )
 
 
-
-
 class _BigtableDataset(dataset_ops.DatasetSource):
     """_BigtableDataset represents a dataset that retrieves keys and values."""
 
-    def __init__(self, client_resource, table_id: str, columns: List[str], row_set: RowSet):
+    def __init__(
+        self, client_resource, table_id: str, columns: List[str], row_set: RowSet
+    ):
         self._table_id = table_id
         self._columns = columns
         self._element_spec = tf.TensorSpec(

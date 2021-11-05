@@ -14,7 +14,6 @@
 
 """Module implementing basic functions for obtaining BigTable RowSets"""
 
-from tensorflow.python.framework import dtypes
 from tensorflow_io.python.ops import core_ops
 from . import bigtable_row_range
 from typing import Union
