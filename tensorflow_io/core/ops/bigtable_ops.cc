@@ -106,3 +106,17 @@ REGISTER_OP("BigtableSplitRowSetEvenly")
       c->set_output(0, c->Vector(c->UnknownDim()));
       return tensorflow::Status::OK();
     });
+
+REGISTER_OP("BigtableTimestampRangeFilter")
+    .Attr("container: string = ''")
+    .Attr("shared_name: string = ''")
+    .Attr("start: int")
+    .Attr("start: int")
+    .Output("filter: resource")
+    .SetIsStateful()
+    .SetShapeFn(shape_inference::ScalarShape);
+
+REGISTER_OP("BigtablePrintFilter")
+    .Input("filter: resource")
+    .Output("output: string")
+    .SetShapeFn(shape_inference::ScalarShape);
