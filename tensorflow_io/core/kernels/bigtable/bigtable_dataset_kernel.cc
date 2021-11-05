@@ -29,6 +29,54 @@ namespace tensorflow {
 namespace data {
 namespace {
 
+tensorflow::error::Code GcpErrorCodeToTfErrorCode(::google::cloud::StatusCode code) {
+  switch (code) {
+    case ::google::cloud::StatusCode::kOk:
+      return ::tensorflow::error::OK;
+    case ::google::cloud::StatusCode::kCancelled:
+      return ::tensorflow::error::CANCELLED;
+    case ::google::cloud::StatusCode::kInvalidArgument:
+      return ::tensorflow::error::INVALID_ARGUMENT;
+    case ::google::cloud::StatusCode::kDeadlineExceeded:
+      return ::tensorflow::error::DEADLINE_EXCEEDED;
+    case ::google::cloud::StatusCode::kNotFound:
+      return ::tensorflow::error::NOT_FOUND;
+    case ::google::cloud::StatusCode::kAlreadyExists:
+      return ::tensorflow::error::ALREADY_EXISTS;
+    case ::google::cloud::StatusCode::kPermissionDenied:
+      return ::tensorflow::error::PERMISSION_DENIED;
+    case ::google::cloud::StatusCode::kUnauthenticated:
+      return ::tensorflow::error::UNAUTHENTICATED;
+    case ::google::cloud::StatusCode::kResourceExhausted:
+      return ::tensorflow::error::RESOURCE_EXHAUSTED;
+    case ::google::cloud::StatusCode::kFailedPrecondition:
+      return ::tensorflow::error::FAILED_PRECONDITION;
+    case ::google::cloud::StatusCode::kAborted:
+      return ::tensorflow::error::ABORTED;
+    case ::google::cloud::StatusCode::kOutOfRange:
+      return ::tensorflow::error::OUT_OF_RANGE;
+    case ::google::cloud::StatusCode::kUnimplemented:
+      return ::tensorflow::error::UNIMPLEMENTED;
+    case ::google::cloud::StatusCode::kInternal:
+      return ::tensorflow::error::INTERNAL;
+    case ::google::cloud::StatusCode::kUnavailable:
+      return ::tensorflow::error::UNAVAILABLE;
+    case ::google::cloud::StatusCode::kDataLoss:
+      return ::tensorflow::error::DATA_LOSS;
+    default:
+      return ::tensorflow::error::UNKNOWN;
+  }
+}
+
+Status GrpcStatusToTfStatus(const ::google::cloud::Status& status) {
+  if (status.ok()) {
+    return Status::OK();
+  }
+  return Status(GcpErrorCodeToTfErrorCode(status.code()),
+                strings::StrCat("Error reading from Cloud Bigtable: ",
+                                status.message()));
+}
+
 class BigtableClientResource : public ResourceBase {
  public:
   explicit BigtableClientResource(const std::string& project_id,
@@ -119,7 +167,7 @@ class Iterator : public DatasetIterator<Dataset> {
     const auto& row = *it_;
     if (!row.ok()) {
       LOG(ERROR) << row.status().message();
-      return Status(error::OUT_OF_RANGE, row.status.message());
+      return GrpcStatusToTfStatus(row.status());
     }
     for (const auto& cell : row.value().cells()) {
       std::pair<const std::string&, const std::string&> key(
