@@ -119,7 +119,7 @@ class Iterator : public DatasetIterator<Dataset> {
     const auto& row = *it_;
     if (!row.ok()) {
       LOG(ERROR) << row.status().message();
-      return errors::OutOfRange("Failed to get row.");
+      return Status(error::OUT_OF_RANGE, row.status.message());
     }
     for (const auto& cell : row.value().cells()) {
       std::pair<const std::string&, const std::string&> key(

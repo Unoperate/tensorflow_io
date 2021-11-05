@@ -108,7 +108,7 @@ class BigtablePrintRowRangeOp : public OpKernel {
   void Compute(OpKernelContext* context) override {
     BigtableRowRangeResource* resource;
     OP_REQUIRES_OK(context,
-                   GetResourceFromContext(context, "row_range_resource", &resource));
+                   GetResourceFromContext(context, "row_range", &resource));
     core::ScopedUnref unref(resource);
 
     Tensor* output_tensor = NULL;
@@ -121,6 +121,28 @@ class BigtablePrintRowRangeOp : public OpKernel {
 
 REGISTER_KERNEL_BUILDER(Name("BigtablePrintRowRange").Device(DEVICE_CPU),
                         BigtablePrintRowRangeOp);
+
+class BigtablePrefixRowRangeOp
+    : public AbstractBigtableResourceOp<BigtableRowRangeResource> {
+ public:
+  explicit BigtablePrefixRowRangeOp(OpKernelConstruction* ctx)
+      : AbstractBigtableResourceOp<BigtableRowRangeResource>(ctx) {
+    VLOG(1) << "BigtablePrefixRowRangeOp ctor ";
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("prefix", &prefix_));
+  }
+
+ private:
+  StatusOr<BigtableRowRangeResource*> CreateResource()
+       override {
+    return new BigtableRowRangeResource(cbt::RowRange::Prefix(prefix_));
+  }
+
+ private:
+  std::string prefix_;
+};
+
+REGISTER_KERNEL_BUILDER(Name("BigtablePrefixRowRange").Device(DEVICE_CPU),
+                        BigtablePrefixRowRangeOp);
 
 }  // namespace io
 }  // namespace tensorflow

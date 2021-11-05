@@ -45,7 +45,7 @@ class BigtablePrintRowSetOp : public OpKernel {
   void Compute(OpKernelContext* context) override {
     BigtableRowSetResource* resource;
     OP_REQUIRES_OK(context,
-                   GetResourceFromContext(context, "resource", &resource));
+                   GetResourceFromContext(context, "row_set", &resource));
     core::ScopedUnref unref(resource);
 
     Tensor* output_tensor = NULL;
@@ -69,7 +69,7 @@ class BigtableRowSetAppendRowOp : public OpKernel {
   void Compute(OpKernelContext* context) override {
     BigtableRowSetResource* resource;
     OP_REQUIRES_OK(context,
-                   GetResourceFromContext(context, "resource", &resource));
+                   GetResourceFromContext(context, "row_set", &resource));
     core::ScopedUnref unref(resource);
 
     resource->AppendRow(row_key_);
@@ -90,13 +90,13 @@ class BigtableRowSetAppendRowRangeOp : public OpKernel {
   void Compute(OpKernelContext* context) override {
     mutex_lock lock(mu_);
     BigtableRowSetResource* row_set_resource;
-    OP_REQUIRES_OK(context, GetResourceFromContext(context, "row_set_resource",
+    OP_REQUIRES_OK(context, GetResourceFromContext(context, "row_set",
                                                    &row_set_resource));
     core::ScopedUnref row_set_resource_unref(row_set_resource);
 
     BigtableRowRangeResource* row_range_resource;
     OP_REQUIRES_OK(context,
-                   GetResourceFromContext(context, "row_range_resource",
+                   GetResourceFromContext(context, "row_range",
                                           &row_range_resource));
     core::ScopedUnref row_range_resource_unref(row_range_resource);
 
@@ -111,28 +111,6 @@ class BigtableRowSetAppendRowRangeOp : public OpKernel {
 REGISTER_KERNEL_BUILDER(Name("BigtableRowSetAppendRowRange").Device(DEVICE_CPU),
                         BigtableRowSetAppendRowRangeOp);
 
-class BigtablePrefixRowRangeOp
-    : public AbstractBigtableResourceOp<BigtableRowRangeResource> {
- public:
-  explicit BigtablePrefixRowRangeOp(OpKernelConstruction* ctx)
-      : AbstractBigtableResourceOp<BigtableRowRangeResource>(ctx) {
-    VLOG(1) << "BigtablePrefixRowRangeOp ctor ";
-    OP_REQUIRES_OK(ctx, ctx->GetAttr("prefix_str", &prefix_str_));
-  }
-
- private:
-  StatusOr<BigtableRowRangeResource*> CreateResource()
-       override {
-    return new BigtableRowRangeResource(cbt::RowRange::Prefix(prefix_str_));
-  }
-
- private:
-  std::string prefix_str_;
-};
-
-REGISTER_KERNEL_BUILDER(Name("BigtablePrefixRowRange").Device(DEVICE_CPU),
-                        BigtablePrefixRowRangeOp);
-
 class BigtableRowSetIntersectOp : public OpKernel {
  public:
   explicit BigtableRowSetIntersectOp(OpKernelConstruction* context)
@@ -144,13 +122,13 @@ class BigtableRowSetIntersectOp : public OpKernel {
     OP_REQUIRES_OK(context, cinfo_.Init(mgr, def()));
 
     BigtableRowSetResource* row_set_resource;
-    OP_REQUIRES_OK(context, GetResourceFromContext(context, "row_set_resource",
+    OP_REQUIRES_OK(context, GetResourceFromContext(context, "row_set",
                                                    &row_set_resource));
     core::ScopedUnref row_set_resource_unref(row_set_resource);
 
     BigtableRowRangeResource* row_range_resource;
     OP_REQUIRES_OK(context,
-                   GetResourceFromContext(context, "row_range_resource",
+                   GetResourceFromContext(context, "row_range",
                                           &row_range_resource));
     core::ScopedUnref row_range_resource_unref(row_range_resource);
 
