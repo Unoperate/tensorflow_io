@@ -18,7 +18,6 @@ from tensorflow.python.framework import dtypes
 from tensorflow_io.python.ops import core_ops
 from . import bigtable_row_range
 from typing import Union
-import tensorflow
 
 
 class RowSet:
@@ -33,7 +32,8 @@ class RowSet:
             core_ops.bigtable_row_set_append_row(self._impl, row_or_range)
         else:
             core_ops.bigtable_row_set_append_row_range(
-                self._impl, row_or_range._impl)
+                self._impl, row_or_range._impl
+            )
 
 
 def empty():
@@ -42,7 +42,7 @@ def empty():
 
 
 def from_rows_or_ranges(*args: Union[str, bigtable_row_range.RowRange]):
-    """ Create a set from a row range.
+    """Create a set from a row range.
 
     Args:
       *args: A row range (RowRange) which will be
@@ -58,7 +58,7 @@ def from_rows_or_ranges(*args: Union[str, bigtable_row_range.RowRange]):
 
 
 def intersect(row_set: RowSet, row_range: bigtable_row_range.RowRange):
-    """ Modify a row set by intersecting its contents with a row range.
+    """Modify a row set by intersecting its contents with a row range.
 
     All rows intersecting with the given range will be removed from the set
     and all row ranges will either be adjusted so that they do not cover
@@ -72,4 +72,6 @@ def intersect(row_set: RowSet, row_range: bigtable_row_range.RowRange):
     Returns:
       RowSet: an intersection of the given row set and row range.
     """
-    return RowSet(core_ops.bigtable_row_set_intersect(row_set._impl, row_range._impl))
+    return RowSet(
+        core_ops.bigtable_row_set_intersect(row_set._impl, row_range._impl)
+    )
