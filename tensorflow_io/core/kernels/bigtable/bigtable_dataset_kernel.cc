@@ -29,7 +29,7 @@ namespace tensorflow {
 namespace data {
 namespace {
 
-tensorflow::error::Code GcpErrorCodeToTfErrorCode(::google::cloud::StatusCode code) {
+tensorflow::error::Code GoogleCloudErrorCodeToTfErrorCode(::google::cloud::StatusCode code) {
   switch (code) {
     case ::google::cloud::StatusCode::kOk:
       return ::tensorflow::error::OK;
@@ -68,11 +68,11 @@ tensorflow::error::Code GcpErrorCodeToTfErrorCode(::google::cloud::StatusCode co
   }
 }
 
-Status GrpcStatusToTfStatus(const ::google::cloud::Status& status) {
+Status GoogleCloudStatusToTfStatus(const ::google::cloud::Status& status) {
   if (status.ok()) {
     return Status::OK();
   }
-  return Status(GcpErrorCodeToTfErrorCode(status.code()),
+  return Status(GoogleCloudErrorCodeToTfErrorCode(status.code()),
                 strings::StrCat("Error reading from Cloud Bigtable: ",
                                 status.message()));
 }
@@ -167,7 +167,7 @@ class Iterator : public DatasetIterator<Dataset> {
     const auto& row = *it_;
     if (!row.ok()) {
       LOG(ERROR) << row.status().message();
-      return GrpcStatusToTfStatus(row.status());
+      return GoogleCloudStatusToTfStatus(row.status());
     }
     for (const auto& cell : row.value().cells()) {
       std::pair<const std::string&, const std::string&> key(
