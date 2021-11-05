@@ -94,12 +94,12 @@ REGISTER_OP("BigtableRowSetIntersect")
     .Output("result_row_set: resource")
     .SetShapeFn(shape_inference::ScalarShape);
 
-REGISTER_OP("BigtableRowsetIntersectTensor")
+REGISTER_OP("BigtableRowSetIntersectTensor")
     .Attr("container: string = ''")
     .Attr("shared_name: string = ''")
-    .Input("row_set_resource: resource")
+    .Input("row_set: resource")
     .Input("row_range_tensor: string")
-    .Output("row_set: resource")
+    .Output("result_row_set: resource")
     .SetShapeFn(shape_inference::UnchangedShape);
 
 

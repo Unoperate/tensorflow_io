@@ -150,7 +150,7 @@ class Iterator : public DatasetIterator<Dataset> {
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
         table_(this->dataset()->client_resource().CreateTable(table_id)),
         reader_(this->table_.ReadRows(
-            this->dataset()->row_set_resource()->row_set(),
+            this->dataset()->row_set_resource().row_set(),
             // cbt::RowRange::InfiniteRange(),
             cbt::Filter::Chain(CreateColumnsFilter(columns_),
                                cbt::Filter::Latest(1)))),
@@ -313,7 +313,7 @@ class Dataset : public DatasetBase {
   }
 
   BigtableClientResource& client_resource() const { return client_resource_; }
-  io::BigtableRowsetResource& row_set_resource() const { return row_set_resource_; }
+  io::BigtableRowSetResource& row_set_resource() const { return row_set_resource_; }
 
  protected:
   Status AsGraphDefInternal(SerializationContext* ctx,
@@ -327,7 +327,7 @@ class Dataset : public DatasetBase {
 
  private:
   BigtableClientResource& client_resource_;
-  io::BigtableRowSetResource* row_set_resource_;
+  io::BigtableRowSetResource& row_set_resource_;
   const std::string table_id_;
   const std::vector<std::string> columns_;
   DataTypeVector dtypes_;

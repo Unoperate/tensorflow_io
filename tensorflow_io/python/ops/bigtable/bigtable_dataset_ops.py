@@ -52,7 +52,7 @@ class BigtableTable:
 
         def map_func(sample):
             rs = RowSet(
-                core_ops.bigtable_rowset_intersect_tensor(row_set._impl, sample)
+                core_ops.bigtable_row_set_intersect_tensor(row_set._impl, sample)
             )
             return self.read_rows(columns, rs)
 
