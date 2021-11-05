@@ -26,14 +26,14 @@ limitations under the License.
 namespace tensorflow {
 namespace io {
 
-class BigtableRowsetResource : public ResourceBase {
+class BigtableRowSetResource : public ResourceBase {
  public:
-  explicit BigtableRowsetResource(google::cloud::bigtable::RowSet row_set)
+  explicit BigtableRowSetResource(google::cloud::bigtable::RowSet row_set)
       : row_set_(std::move(row_set)) {
-    VLOG(1) << "BigtableRowsetResource ctor";
+    VLOG(1) << "BigtableRowSetResource ctor";
   }
 
-  ~BigtableRowsetResource() { VLOG(1) << "BigtableRowsetResource dtor"; }
+  ~BigtableRowSetResource() { VLOG(1) << "BigtableRowSetResource dtor"; }
 
   std::string ToString() const {
     std::string res;
@@ -51,7 +51,7 @@ class BigtableRowsetResource : public ResourceBase {
   }
 
   string DebugString() const override {
-    return "BigtableRowsetResource:{" + ToString() + "}";
+    return "BigtableRowSetResource:{" + ToString() + "}";
   }
 
  private:

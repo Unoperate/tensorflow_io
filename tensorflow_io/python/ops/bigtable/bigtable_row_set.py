@@ -26,19 +26,19 @@ class RowSet:
         self._impl = impl
 
     def __repr__(self) -> str:
-        return core_ops.bigtable_print_rowset(self._impl).numpy()[0].decode()
+        return core_ops.bigtable_print_row_set(self._impl).numpy()[0].decode()
 
     def append(self, row_or_range):
         if isinstance(row_or_range, str):
-            core_ops.bigtable_rowset_append_row(self._impl, row_or_range)
+            core_ops.bigtable_row_set_append_row(self._impl, row_or_range)
         else:
-            core_ops.bigtable_rowset_append_row_range(
+            core_ops.bigtable_row_set_append_row_range(
                 self._impl, row_or_range._impl)
 
 
 def empty():
     """Create an empty row set."""
-    return RowSet(core_ops.bigtable_empty_rowset())
+    return RowSet(core_ops.bigtable_empty_row_set())
 
 
 def from_rows_or_ranges(*args: Union[str, bigtable_row_range.RowRange]):
@@ -72,4 +72,4 @@ def intersect(row_set: RowSet, row_range: bigtable_row_range.RowRange):
     Returns:
       RowSet: an intersection of the given row set and row range.
     """
-    return RowSet(core_ops.bigtable_rowset_intersect(row_set._impl, row_range._impl))
+    return RowSet(core_ops.bigtable_row_set_intersect(row_set._impl, row_range._impl))

@@ -34,17 +34,17 @@ REGISTER_OP("BigtableDataset")
     .SetShapeFn(shape_inference::ScalarShape);
 
 
-REGISTER_OP("BigtableEmptyRowset")
+REGISTER_OP("BigtableEmptyRowSet")
     .Attr("container: string = ''")
     .Attr("shared_name: string = ''")
-    .Output("rowset: resource")
+    .Output("row_set_resource: resource")
     .SetIsStateful()
     .SetShapeFn(shape_inference::ScalarShape);
 
 REGISTER_OP("BigtableEmptyRowRange")
     .Attr("container: string = ''")
     .Attr("shared_name: string = ''")
-    .Output("rowrange: resource")
+    .Output("row_range_resource: resource")
     .SetIsStateful()
     .SetShapeFn(shape_inference::ScalarShape);
 
@@ -63,33 +63,33 @@ REGISTER_OP("BigtableRowRange")
     .Attr("right_open: bool")
     .Attr("container: string = ''")
     .Attr("shared_name: string = ''")
-    .Output("rowrange: resource")
+    .Output("row_range_resource: resource")
     .SetIsStateful()
     .SetShapeFn(shape_inference::ScalarShape);
 
 REGISTER_OP("BigtablePrintRowRange")
+    .Input("row_range_resource: resource")
+    .Output("output: string")
+    .SetShapeFn(shape_inference::ScalarShape);
+
+REGISTER_OP("BigtablePrintRowSet")
     .Input("resource: resource")
     .Output("output: string")
     .SetShapeFn(shape_inference::ScalarShape);
 
-REGISTER_OP("BigtablePrintRowset")
-    .Input("resource: resource")
-    .Output("output: string")
-    .SetShapeFn(shape_inference::ScalarShape);
-
-REGISTER_OP("BigtableRowsetAppendRow")
+REGISTER_OP("BigtableRowSetAppendRow")
     .Attr("row_key: string")
     .Input("resource: resource");
 
-REGISTER_OP("BigtableRowsetAppendRowRange")
+REGISTER_OP("BigtableRowSetAppendRowRange")
     .Input("row_set_resource: resource")
     .Input("row_range_resource: resource");
 
-REGISTER_OP("BigtableRowsetIntersect")
+REGISTER_OP("BigtableRowSetIntersect")
     .Attr("container: string = ''")
     .Attr("shared_name: string = ''")
     .Input("row_set_resource: resource")
     .Input("row_range_resource: resource")
-    .Output("row_set: resource")
+    .Output("row_set_output_resource: resource")
     .SetShapeFn(shape_inference::ScalarShape);
 

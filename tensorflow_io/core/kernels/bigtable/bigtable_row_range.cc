@@ -28,8 +28,7 @@ class BigtableEmptyRowRangeOp
   }
 
  private:
-  StatusOr<BigtableRowRangeResource*> CreateResource()
-      override {
+  StatusOr<BigtableRowRangeResource*> CreateResource() override {
     return new BigtableRowRangeResource(cbt::RowRange::Empty());
   }
 };
@@ -50,8 +49,7 @@ class BigtableRowRangeOp
   }
 
  private:
-  StatusOr<BigtableRowRangeResource*> CreateResource()
-      override {
+  StatusOr<BigtableRowRangeResource*> CreateResource() override {
     VLOG(1) << "BigtableRowRangeOp constructing row_range:"
             << (left_open_ ? "(" : "[") << left_row_key_ << ":"
             << right_row_key_ << (right_open_ ? ")" : "]");
@@ -84,7 +82,9 @@ class BigtableRowRangeOp
     return Status(
         error::INTERNAL,
         "Reached impossible branch. Above clauses should cover all possible "
-        "values of left_open_ and right_open_. left_open:" +
+        "values of left_open_ and right_open_. Please report this issue here:"
+        "https://github.com/tensorflow/io/issues/new/choose quoting these"
+        "values: left_open:" +
             std::to_string(left_open_) +
             " right_open:" + std::to_string(right_open_));
   }
@@ -108,7 +108,7 @@ class BigtablePrintRowRangeOp : public OpKernel {
   void Compute(OpKernelContext* context) override {
     BigtableRowRangeResource* resource;
     OP_REQUIRES_OK(context,
-                   GetResourceFromContext(context, "resource", &resource));
+                   GetResourceFromContext(context, "row_range_resource", &resource));
     core::ScopedUnref unref(resource);
 
     Tensor* output_tensor = NULL;
