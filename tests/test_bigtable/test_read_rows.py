@@ -55,7 +55,40 @@ class BigtableReadTest(test.TestCase):
             ["fam1:col1", "fam2:col2"],
         )
 
-        for i, r in enumerate(table.read_rows(["fam1:col1", "fam2:col2"])):
+        for i, r in enumerate(
+            table.read_rows(
+                ["fam1:col1", "fam2:col2"],
+                row_set=row_set.from_rows_or_ranges(row_range.empty()),
+            )
+        ):
             for j, c in enumerate(r):
-                print("ij", i, j, c)
                 self.assertEqual(values[i][j], c.numpy().decode())
+
+    def test_read_row_set(self):
+        os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
+        self.emulator.create_table(
+            "fake_project", "fake_instance", "test-table", ["fam1", "fam2"]
+        )
+
+        values = [[f"[{i,j}]" for j in range(2)] for i in range(20)]
+
+        ten = tf.constant(values)
+
+        client = BigtableClient("fake_project", "fake_instance")
+        table = client.get_table("test-table")
+
+        self.emulator.write_tensor(
+            "fake_project",
+            "fake_instance",
+            "test-table",
+            ten,
+            ["row" + str(i).rjust(3, "0") for i in range(20)],
+            ["fam1:col1", "fam2:col2"],
+        )
+
+        row_s = row_set.from_rows_or_ranges(row_range.closed_range("row000", "row009"))
+
+        read_rows = [
+            r for r in table.read_rows(["fam1:col1", "fam2:col2"], row_set=row_s)
+        ]
+        self.assertEqual(len(read_rows), 10)

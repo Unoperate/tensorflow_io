@@ -36,8 +36,13 @@ class BigtableParallelReadTest(test.TestCase):
 
     def test_parallel_read(self):
         os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
-        self.emulator.create_table("fake_project", "fake_instance", "test-table",
-                                   ["fam1", "fam2"], splits=["row005", "row010", "row015"])
+        self.emulator.create_table(
+            "fake_project",
+            "fake_instance",
+            "test-table",
+            ["fam1", "fam2"],
+            splits=["row005", "row010", "row015"],
+        )
 
         values = [[f"[{i,j}]" for j in range(2)] for i in range(20)]
 
@@ -46,17 +51,33 @@ class BigtableParallelReadTest(test.TestCase):
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
-        self.emulator.write_tensor("fake_project", "fake_instance", "test-table", ten,
-                                   ["row" + str(i).rjust(3, "0") for i in range(20)],  ["fam1:col1", "fam2:col2"])
+        self.emulator.write_tensor(
+            "fake_project",
+            "fake_instance",
+            "test-table",
+            ten,
+            ["row" + str(i).rjust(3, "0") for i in range(20)],
+            ["fam1:col1", "fam2:col2"],
+        )
 
-        for i, r in enumerate(table.parallel_read_rows(["fam1:col1", "fam2:col2"], row_set=row_set.from_rows_or_ranges(row_range.empty()))):
+        for i, r in enumerate(
+            table.parallel_read_rows(
+                ["fam1:col1", "fam2:col2"],
+                row_set=row_set.from_rows_or_ranges(row_range.empty()),
+            )
+        ):
             for j, c in enumerate(r):
                 self.assertEqual(values[i][j], c.numpy().decode())
 
     def test_not_parallel_read(self):
         os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
-        self.emulator.create_table("fake_project", "fake_instance", "test-table",
-                                   ["fam1", "fam2"], splits=["row005", "row010", "row015"])
+        self.emulator.create_table(
+            "fake_project",
+            "fake_instance",
+            "test-table",
+            ["fam1", "fam2"],
+            splits=["row005", "row010", "row015"],
+        )
 
         values = [[f"[{i,j}]" for j in range(2)] for i in range(20)]
 
@@ -65,17 +86,34 @@ class BigtableParallelReadTest(test.TestCase):
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
-        self.emulator.write_tensor("fake_project", "fake_instance", "test-table", ten,
-                                   ["row" + str(i).rjust(3, "0") for i in range(20)],  ["fam1:col1", "fam2:col2"])
+        self.emulator.write_tensor(
+            "fake_project",
+            "fake_instance",
+            "test-table",
+            ten,
+            ["row" + str(i).rjust(3, "0") for i in range(20)],
+            ["fam1:col1", "fam2:col2"],
+        )
 
-        for i, r in enumerate(table.parallel_read_rows(["fam1:col1", "fam2:col2"], row_set=row_set.from_rows_or_ranges(row_range.empty()), num_parallel_calls=2)):
+        for i, r in enumerate(
+            table.parallel_read_rows(
+                ["fam1:col1", "fam2:col2"],
+                row_set=row_set.from_rows_or_ranges(row_range.empty()),
+                num_parallel_calls=2,
+            )
+        ):
             for j, c in enumerate(r):
                 self.assertEqual(values[i][j], c.numpy().decode())
 
     def test_sample_row_sets(self):
         os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
-        self.emulator.create_table("fake_project", "fake_instance", "test-table",
-                                   ["fam1", "fam2"], splits=["row005", "row010", "row015", "row020", "row025", "row030"])
+        self.emulator.create_table(
+            "fake_project",
+            "fake_instance",
+            "test-table",
+            ["fam1", "fam2"],
+            splits=["row005", "row010", "row015", "row020", "row025", "row030"],
+        )
 
         values = [[f"[{i,j}]" for j in range(2)] for i in range(40)]
 
@@ -83,24 +121,45 @@ class BigtableParallelReadTest(test.TestCase):
 
         client = BigtableClient("fake_project", "fake_instance")
 
-        self.emulator.write_tensor("fake_project", "fake_instance", "test-table", ten,
-                                   ["row" + str(i).rjust(3, "0") for i in range(40)],  ["fam1:col1", "fam2:col2"])
+        self.emulator.write_tensor(
+            "fake_project",
+            "fake_instance",
+            "test-table",
+            ten,
+            ["row" + str(i).rjust(3, "0") for i in range(40)],
+            ["fam1:col1", "fam2:col2"],
+        )
 
         rs = row_set.from_rows_or_ranges(row_range.infinite())
 
         num_parallel_calls = 2
-        samples = [s for s in core_ops.bigtable_sample_row_sets(client._client_resource, rs._impl, "test-table", num_parallel_calls)]
+        samples = [
+            s
+            for s in core_ops.bigtable_sample_row_sets(
+                client._client_resource, rs._impl, "test-table", num_parallel_calls
+            )
+        ]
         self.assertEqual(len(samples), num_parallel_calls)
 
         num_parallel_calls = 6
-        samples = [s for s in core_ops.bigtable_sample_row_sets(client._client_resource, rs._impl, "test-table", num_parallel_calls)]
-        
+        samples = [
+            s
+            for s in core_ops.bigtable_sample_row_sets(
+                client._client_resource, rs._impl, "test-table", num_parallel_calls
+            )
+        ]
+
         # The emulator may return different samples each time, so we can't
         # expect an exact number, but it must be no more than num_parallel_calls
         self.assertLessEqual(len(samples), num_parallel_calls)
 
         num_parallel_calls = 1
-        samples = [s for s in core_ops.bigtable_sample_row_sets(client._client_resource, rs._impl, "test-table", num_parallel_calls)]
+        samples = [
+            s
+            for s in core_ops.bigtable_sample_row_sets(
+                client._client_resource, rs._impl, "test-table", num_parallel_calls
+            )
+        ]
         self.assertEqual(len(samples), num_parallel_calls)
         self.assertEqual(samples[0].numpy()[0].decode(), "")
         self.assertEqual(samples[0].numpy()[1].decode(), "")
