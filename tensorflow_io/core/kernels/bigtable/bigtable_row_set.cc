@@ -29,7 +29,7 @@ class BigtableEmptyRowsetOp
 
  private:
   StatusOr<BigtableRowsetResource*> CreateResource()
-      TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
+       override {
     return new BigtableRowsetResource(cbt::RowSet());
   }
 };
@@ -122,7 +122,7 @@ class BigtablePrefixRowRangeOp
 
  private:
   StatusOr<BigtableRowRangeResource*> CreateResource()
-      TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
+       override {
     return new BigtableRowRangeResource(cbt::RowRange::Prefix(prefix_str_));
   }
 

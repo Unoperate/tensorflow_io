@@ -52,7 +52,7 @@ class AbstractBigtableResourceOp : public OpKernel {
   }
 
  private:
-  virtual StatusOr<T*> CreateResource() TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) = 0;
+  virtual StatusOr<T*> CreateResource() = 0;
 };
 
 }  // namespace io

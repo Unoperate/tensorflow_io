@@ -29,7 +29,7 @@ class BigtableEmptyRowRangeOp
 
  private:
   StatusOr<BigtableRowRangeResource*> CreateResource()
-      TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
+      override {
     return new BigtableRowRangeResource(cbt::RowRange::Empty());
   }
 };
@@ -51,7 +51,7 @@ class BigtableRowRangeOp
 
  private:
   StatusOr<BigtableRowRangeResource*> CreateResource()
-      TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
+      override {
     VLOG(1) << "BigtableRowRangeOp constructing row_range:"
             << (left_open_ ? "(" : "[") << left_row_key_ << ":"
             << right_row_key_ << (right_open_ ? ")" : "]");
