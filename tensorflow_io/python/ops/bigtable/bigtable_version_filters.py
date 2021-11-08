@@ -34,7 +34,7 @@ def latest():
     Returns:
       pbt_C.Filter: Filter passing only most recent version of a value.
     """
-    return core_ops.bigtable_latest_filter()
+    return BigtableFilter(core_ops.bigtable_latest_filter())
 
 
 def timestamp_range(
@@ -60,7 +60,9 @@ def timestamp_range(
     else:
         end_timestamp = int(end * 1e6)
 
-    return core_ops.bigtable_timestamp_range_filter(start_timestamp, end_timestamp)
+    return BigtableFilter(
+        core_ops.bigtable_timestamp_range_filter(start_timestamp, end_timestamp)
+    )
 
 
 def timestamp_range_micros(
@@ -75,6 +77,8 @@ def timestamp_range_micros(
     Returns:
       pbt_C.Filter: Filter passing only values' versions from the specified range.
     """
-    return core_ops.bigtable_timestamp_range_filter(
-        int(start_timestamp), int(end_timestamp)
+    return BigtableFilter(
+        core_ops.bigtable_timestamp_range_filter(
+            int(start_timestamp), int(end_timestamp)
+        )
     )

@@ -23,6 +23,7 @@ limitations under the License.
 #include "tensorflow/core/framework/resource_mgr.h"
 #include "tensorflow/core/framework/resource_op_kernel.h"
 #include "tensorflow_io/core/kernels/bigtable/bigtable_row_set.h"
+#include "tensorflow_io/core/kernels/bigtable/bigtable_version_filters.h"
 
 namespace cbt = ::google::cloud::bigtable;
 
@@ -145,10 +146,19 @@ class Iterator : public DatasetIterator<Dataset> {
                     const std::vector<std::string>& columns)
       : DatasetIterator<Dataset>(params),
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
+<<<<<<< HEAD
         reader_(this->dataset()->CreateTable().ReadRows(
             this->dataset()->row_set(),
             cbt::Filter::Chain(CreateColumnsFilter(columns_),
                                cbt::Filter::Latest(1)))),
+=======
+        reader_(
+            this->dataset()->client_resource().CreateTable(table_id).ReadRows(
+                cbt::RowRange::InfiniteRange(),
+                cbt::Filter::Chain(CreateColumnsFilter(columns_),
+                                   this->dataset()->filter_resource().filter(),
+                                   cbt::Filter::Latest(1)))),
+>>>>>>> 4489e24... add filters to python api
         it_(this->reader_.begin()),
         column_to_idx_(CreateColumnToIdxMap(columns_)) {
     VLOG(1) << "DatasetIterator ctor";
@@ -278,10 +288,13 @@ class Dataset : public DatasetBase {
   Dataset(OpKernelContext* ctx,
           const std::shared_ptr<cbt::DataClient>& data_client,
           cbt::RowSet row_set, std::string table_id,
+          io::BigtableFilterResource* filter_resource,
           std::vector<std::string> columns)
       : DatasetBase(DatasetContext(ctx)),
         data_client_(data_client),
         row_set_(std::move(row_set)),
+        filter_resource_(*filter_resource),
+        filter_resource_unref_(filter_resource),
         table_id_(table_id),
         columns_(columns) {
     dtypes_.push_back(DT_STRING);
@@ -319,6 +332,10 @@ class Dataset : public DatasetBase {
     return table;
   }
 
+  io::BigtableFilterResource& filter_resource() const {
+    return filter_resource_;
+  }
+
  protected:
   Status AsGraphDefInternal(SerializationContext* ctx,
                             DatasetGraphDefBuilder* b,
@@ -332,6 +349,8 @@ class Dataset : public DatasetBase {
  private:
   std::shared_ptr<cbt::DataClient> const& data_client_;
   const cbt::RowSet row_set_;
+  io::BigtableFilterResource& filter_resource_;
+  const core::ScopedUnref filter_resource_unref_;
   const std::string table_id_;
   const std::vector<std::string> columns_;
   DataTypeVector dtypes_;
@@ -356,9 +375,14 @@ class BigtableDatasetOp : public DatasetOpKernel {
     OP_REQUIRES_OK(ctx,
                    GetResourceFromContext(ctx, "row_set", &row_set_resource));
     core::ScopedUnref row_set_resource_unref_(row_set_resource);
+    
+    io::BigtableFilterResource* filter_resource;
+    OP_REQUIRES_OK(ctx,
+                   GetResourceFromContext(ctx, "filter", &filter_resource));
+    core::ScopedUnref filter_resource_unref_(filter_resource);
 
     *output = new Dataset(ctx, client_resource->data_client(),
-                          row_set_resource->row_set(), table_id_, columns_);
+                          row_set_resource->row_set(), table_id_, filter_resource, columns_);
   }
 
  private:

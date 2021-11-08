@@ -20,18 +20,16 @@ namespace tensorflow {
 namespace io {
 
 class BigtableLatestFilterOp
-    : public OpKernelCreatingResource<BigtableFilterResource> {
+    : public AbstractBigtableResourceOp<BigtableFilterResource> {
  public:
   explicit BigtableLatestFilterOp(OpKernelConstruction* ctx)
-      : OpKernelCreatingResource<BigtableFilterResource>(ctx) {
+      : AbstractBigtableResourceOp<BigtableFilterResource>(ctx) {
     VLOG(1) << "BigtableLatestFilterOp ctor ";
   }
 
  private:
-  Status CreateResource(BigtableFilterResource** resource)
-      TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
-    *resource = new BigtableFilterResource(cbt::Filter::Latest(1));
-    return Status::OK();
+  StatusOr<BigtableFilterResource*> CreateResource() override {
+    return new BigtableFilterResource(cbt::Filter::Latest(1));
   }
 
  private:
@@ -42,20 +40,18 @@ REGISTER_KERNEL_BUILDER(Name("BigtableLatestFilter").Device(DEVICE_CPU),
                         BigtableLatestFilterOp);
     
 class BigtableTimestampRangeFilterOp
-    : public OpKernelCreatingResource<BigtableFilterResource> {
+    : public AbstractBigtableResourceOp<BigtableFilterResource> {
  public:
   explicit BigtableTimestampRangeFilterOp(OpKernelConstruction* ctx)
-      : OpKernelCreatingResource<BigtableFilterResource>(ctx) {
+      : AbstractBigtableResourceOp<BigtableFilterResource>(ctx) {
     VLOG(1) << "BigtableTimestampRangeFilterOp ctor ";
     OP_REQUIRES_OK(ctx, ctx->GetAttr("start", &start_));
     OP_REQUIRES_OK(ctx, ctx->GetAttr("end", &end_));
   }
 
  private:
-  Status CreateResource(BigtableFilterResource** resource)
-      TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) override {
-    *resource = new BigtableFilterResource(cbt::Filter::TimestampRangeMicros(start_, end_));
-    return Status::OK();
+  StatusOr<BigtableFilterResource*> CreateResource() override {
+    return new BigtableFilterResource(cbt::Filter::TimestampRangeMicros(start_, end_));
   }
 
  private:

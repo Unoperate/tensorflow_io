@@ -27,7 +27,11 @@ REGISTER_OP("BigtableClient")
 
 REGISTER_OP("BigtableDataset")
     .Input("client: resource")
+<<<<<<< HEAD
     .Input("row_set: resource")
+=======
+    .Input("filter: resource")
+>>>>>>> 4489e24... add filters to python api
     .Attr("table_id: string")
     .Attr("columns: list(string) >= 1")
     .Output("handle: variant")
@@ -107,11 +111,18 @@ REGISTER_OP("BigtableSplitRowSetEvenly")
       return tensorflow::Status::OK();
     });
 
+REGISTER_OP("BigtableLatestFilter")
+    .Attr("container: string = ''")
+    .Attr("shared_name: string = ''")
+    .Output("filter: resource")
+    .SetIsStateful()
+    .SetShapeFn(shape_inference::ScalarShape);
+
 REGISTER_OP("BigtableTimestampRangeFilter")
     .Attr("container: string = ''")
     .Attr("shared_name: string = ''")
     .Attr("start: int")
-    .Attr("start: int")
+    .Attr("end: int")
     .Output("filter: resource")
     .SetIsStateful()
     .SetShapeFn(shape_inference::ScalarShape);
