@@ -172,5 +172,3 @@ class BigtableParallelReadTest(test.TestCase):
             )
         ]
         self.assertEqual(len(samples), num_parallel_calls)
-        self.assertEqual(samples[0].numpy()[0].decode(), "")
-        self.assertEqual(samples[0].numpy()[1].decode(), "")

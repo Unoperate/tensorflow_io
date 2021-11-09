@@ -53,17 +53,16 @@ class BigtableTable:
             self._table_id,
             num_parallel_calls,
         )
-        samples_ds = dataset_ops.Dataset.from_tensor_slices(samples)
+        # samples_ds = dataset_ops.Dataset.from_tensor_slices(samples)
 
-        def map_func(sample):
-            rs = RowSet(
-                core_ops.bigtable_row_set_intersect_tensor(
-                    row_set._impl, sample
-                )
-            )
-            return self.read_rows(columns, rs)
+        # for sam in samples_ds:
+        #     print("#"*80)
+        #     print(sam)
+        
+        def map_func(idx):
+            return self.read_rows(columns, RowSet(samples[idx]))
 
-        return samples_ds.interleave(
+        return tf.data.Dataset.range(samples.shape[0]).interleave(
             map_func=map_func,
             cycle_length=num_parallel_calls,
             block_length=1,

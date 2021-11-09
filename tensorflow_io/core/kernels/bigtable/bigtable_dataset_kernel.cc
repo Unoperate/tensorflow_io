@@ -407,6 +407,11 @@ class BigtableSampleRowSetsOp : public OpKernel {
 
   void Compute(OpKernelContext* context) override {
     mutex_lock l(mu_);
+
+    ResourceMgr* mgr = context->resource_manager();
+    ContainerInfo cinfo;
+    OP_REQUIRES_OK(context, cinfo.Init(mgr, def()));
+
     BigtableClientResource* client_resource;
     OP_REQUIRES_OK(context,
                    GetResourceFromContext(context, "client", &client_resource));
@@ -448,9 +453,9 @@ class BigtableSampleRowSetsOp : public OpKernel {
     size_t output_size = std::min(tablets.size(), (size_t)num_parallel_calls_);
 
     Tensor* output_tensor = NULL;
-    OP_REQUIRES_OK(context, context->allocate_output(0, {(long)output_size, 2},
+    OP_REQUIRES_OK(context, context->allocate_output(0, {(long)output_size,1},
                                                      &output_tensor));
-    auto output_v = output_tensor->tensor<tstring, 2>();
+    auto output_v = output_tensor->tensor<ResourceHandle, 2>();
 
     for (size_t i = 0; i < output_size; i++) {
       size_t start_idx = GetWorkerStartIndex(tablets.size(), output_size, i);
@@ -459,8 +464,21 @@ class BigtableSampleRowSetsOp : public OpKernel {
       size_t end_idx = next_worker_start_idx - 1;
       start_key = tablets.at(start_idx).first;
       std::string end_key = tablets.at(end_idx).second;
-      output_v(i, 0) = start_key;
-      output_v(i, 1) = end_key;
+      io::BigtableRowSetResource* row_range =
+          new io::BigtableRowSetResource(row_set_resource->Intersect(
+              cbt::RowRange::RightOpen(start_key, end_key)));
+
+      std::string container_name = cinfo.name() + std::to_string(i);
+
+      VLOG(1) << "creating resource:" << cinfo.container() << ":"
+              << container_name;
+
+      OP_REQUIRES_OK(context,
+                     mgr->Create<io::BigtableRowSetResource>(
+                         cinfo.container(), container_name, row_range));
+      output_v(i,0) = MakeResourceHandle(
+          cinfo.container(), container_name, *context->device(),
+          TypeIndex::Make<io::BigtableRowSetResource>());
     }
   }
 

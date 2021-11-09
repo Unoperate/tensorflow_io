@@ -117,15 +117,3 @@ class TestRowSet(test.TestCase):
             '"row5"\n' + "}\n"
         )
         self.assertEqual(expected, repr(r_set))
-
-    def test_intersect_tensor(self):
-        r_set = row_set.from_rows_or_ranges(
-            row_range.open_range("row1", "row5")
-        )
-        tensor = tf.constant(["row2", "row3"])
-        r_range = row_range.right_open("row2", "row3")
-        regular_intersect = row_set.intersect(r_set, r_range)
-        tensor_intersect = row_set.RowSet(
-            core_ops.bigtable_row_set_intersect_tensor(r_set._impl, tensor)
-        )
-        self.assertEqual(repr(regular_intersect), repr(tensor_intersect))
