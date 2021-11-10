@@ -397,7 +397,8 @@ bool RowSetIntersectsRange(cbt::RowSet const& row_set,
 
 class BigtableSplitRowSetEvenlyOp : public OpKernel {
  public:
-  explicit BigtableSplitRowSetEvenlyOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
+  explicit BigtableSplitRowSetEvenlyOp(OpKernelConstruction* ctx)
+      : OpKernel(ctx) {
     VLOG(1) << "BigtableSplitRowSetEvenlyOp ctor ";
     OP_REQUIRES_OK(ctx, ctx->GetAttr("table_id", &table_id_));
     OP_REQUIRES_OK(ctx,
@@ -421,10 +422,18 @@ class BigtableSplitRowSetEvenlyOp : public OpKernel {
         context, GetResourceFromContext(context, "row_set", &row_set_resource));
     core::ScopedUnref unref_row_set(row_set_resource);
 
+    VLOG(1) << "BigtableSplitRowSetEvenlyOp got RowSet: "
+            << row_set_resource->ToString();
+    if (row_set_resource->row_set().IsEmpty()) {
+      OP_REQUIRES_OK(context,
+                     errors::FailedPrecondition("row_set cannot be empty!"));
+    }
+
     auto table = client_resource->CreateTable(table_id_);
     auto maybe_sample_row_keys = table.SampleRows();
-    if (!maybe_sample_row_keys.ok())
-      throw std::runtime_error(maybe_sample_row_keys.status().message());
+    OP_REQUIRES_OK(context,
+                   GoogleCloudStatusToTfStatus(maybe_sample_row_keys.status()));
+
     auto& sample_row_keys = maybe_sample_row_keys.value();
 
     std::vector<std::pair<std::string, std::string>> tablets;
@@ -435,7 +444,7 @@ class BigtableSplitRowSetEvenlyOp : public OpKernel {
       tablets.emplace_back(start_key, end_key);
       start_key = std::move(end_key);
     }
-    if (!start_key.empty()) {
+    if (!start_key.empty() || tablets.size() == 0) {
       tablets.emplace_back(start_key, "");
     }
     tablets.erase(

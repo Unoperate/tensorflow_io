@@ -40,9 +40,11 @@ class BigtableTable:
     def parallel_read_rows(
         self,
         columns: List[str],
-        num_parallel_calls=1,
+        num_parallel_calls=tf.data.AUTOTUNE,
         row_set: RowSet = from_rows_or_ranges(infinite()),
     ):
+
+        print("calling parallel read_rows with row_set:", row_set)
         samples = core_ops.bigtable_split_row_set_evenly(
             self._client_resource, row_set._impl, self._table_id, num_parallel_calls,
         )
