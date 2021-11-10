@@ -23,9 +23,7 @@ class BigtableClient:
 
     def __init__(self, project_id: str, instance_id: str):
         """Creates a BigtableClient to start Bigtable read sessions."""
-        self._client_resource = core_ops.bigtable_client(
-            project_id, instance_id
-        )
+        self._client_resource = core_ops.bigtable_client(project_id, instance_id)
 
     def get_table(self, table_id):
         return BigtableTable(self._client_resource, table_id)
@@ -37,9 +35,7 @@ class BigtableTable:
         self._client_resource = client_resource
 
     def read_rows(self, columns: List[str], row_set: RowSet):
-        return _BigtableDataset(
-            self._client_resource, self._table_id, columns, row_set
-        )
+        return _BigtableDataset(self._client_resource, self._table_id, columns, row_set)
 
     def parallel_read_rows(
         self,
@@ -48,20 +44,16 @@ class BigtableTable:
         row_set: RowSet = from_rows_or_ranges(infinite()),
     ):
         samples = core_ops.bigtable_sample_row_sets(
-            self._client_resource,
-            row_set._impl,
-            self._table_id,
-            num_parallel_calls,
+            self._client_resource, row_set._impl, self._table_id, num_parallel_calls,
         )
-        # samples_ds = dataset_ops.Dataset.from_tensor_slices(samples)
 
-        # for sam in samples_ds:
-        #     print("#"*80)
-        #     print(sam)
-        
         def map_func(idx):
             return self.read_rows(columns, RowSet(samples[idx]))
 
+        # We interleave a dataset of sample's indexes instead of a dataset of
+        # samples, because Dataset.from_tensor_slices attempts to copy the
+        # resource tensors using DeepCopy from tensor_util.cc which is not
+        # possible for tensors of type DT_RESOURCE.
         return tf.data.Dataset.range(samples.shape[0]).interleave(
             map_func=map_func,
             cycle_length=num_parallel_calls,
@@ -75,17 +67,11 @@ class _BigtableDataset(dataset_ops.DatasetSource):
     """_BigtableDataset represents a dataset that retrieves keys and values."""
 
     def __init__(
-        self,
-        client_resource,
-        table_id: str,
-        columns: List[str],
-        row_set: RowSet,
+        self, client_resource, table_id: str, columns: List[str], row_set: RowSet,
     ):
         self._table_id = table_id
         self._columns = columns
-        self._element_spec = tf.TensorSpec(
-            shape=[len(columns)], dtype=dtypes.string
-        )
+        self._element_spec = tf.TensorSpec(shape=[len(columns)], dtype=dtypes.string)
 
         variant_tensor = core_ops.bigtable_dataset(
             client_resource, row_set._impl, table_id, columns

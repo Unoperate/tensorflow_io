@@ -19,9 +19,7 @@
 
 import os
 from .bigtable_emulator import BigtableEmulator
-from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import (
-    BigtableClient,
-)
+from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
 import tensorflow_io.python.ops.bigtable.bigtable_row_range as row_range
 import tensorflow_io.python.ops.bigtable.bigtable_row_set as row_set
 import tensorflow as tf
@@ -88,12 +86,9 @@ class BigtableReadTest(test.TestCase):
             ["fam1:col1", "fam2:col2"],
         )
 
-        row_s = row_set.from_rows_or_ranges(
-            row_range.closed_range("row000", "row009")
-        )
+        row_s = row_set.from_rows_or_ranges(row_range.closed_range("row000", "row009"))
 
         read_rows = [
-            r
-            for r in table.read_rows(["fam1:col1", "fam2:col2"], row_set=row_s)
+            r for r in table.read_rows(["fam1:col1", "fam2:col2"], row_set=row_s)
         ]
         self.assertEqual(len(read_rows), 10)

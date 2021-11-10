@@ -34,7 +34,6 @@ REGISTER_OP("BigtableDataset")
     .SetIsStateful()
     .SetShapeFn(shape_inference::ScalarShape);
 
-
 REGISTER_OP("BigtableEmptyRowSet")
     .Attr("container: string = ''")
     .Attr("shared_name: string = ''")
@@ -93,7 +92,6 @@ REGISTER_OP("BigtableRowSetIntersect")
     .Input("row_range: resource")
     .Output("result_row_set: resource")
     .SetShapeFn(shape_inference::ScalarShape);
-
 
 REGISTER_OP("BigtableSampleRowSets")
     .Attr("container: string = ''")

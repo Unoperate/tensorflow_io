@@ -453,9 +453,9 @@ class BigtableSampleRowSetsOp : public OpKernel {
     size_t output_size = std::min(tablets.size(), (size_t)num_parallel_calls_);
 
     Tensor* output_tensor = NULL;
-    OP_REQUIRES_OK(context, context->allocate_output(0, {(long)output_size,1},
+    OP_REQUIRES_OK(context, context->allocate_output(0, {(long)output_size},
                                                      &output_tensor));
-    auto output_v = output_tensor->tensor<ResourceHandle, 2>();
+    auto output_v = output_tensor->tensor<ResourceHandle, 1>();
 
     for (size_t i = 0; i < output_size; i++) {
       size_t start_idx = GetWorkerStartIndex(tablets.size(), output_size, i);
@@ -464,7 +464,7 @@ class BigtableSampleRowSetsOp : public OpKernel {
       size_t end_idx = next_worker_start_idx - 1;
       start_key = tablets.at(start_idx).first;
       std::string end_key = tablets.at(end_idx).second;
-      io::BigtableRowSetResource* row_range =
+      io::BigtableRowSetResource* work_chunk_row_set =
           new io::BigtableRowSetResource(row_set_resource->Intersect(
               cbt::RowRange::RightOpen(start_key, end_key)));
 
@@ -473,10 +473,10 @@ class BigtableSampleRowSetsOp : public OpKernel {
       VLOG(1) << "creating resource:" << cinfo.container() << ":"
               << container_name;
 
-      OP_REQUIRES_OK(context,
-                     mgr->Create<io::BigtableRowSetResource>(
-                         cinfo.container(), container_name, row_range));
-      output_v(i,0) = MakeResourceHandle(
+      OP_REQUIRES_OK(
+          context, mgr->Create<io::BigtableRowSetResource>(
+                       cinfo.container(), container_name, work_chunk_row_set));
+      output_v(i) = MakeResourceHandle(
           cinfo.container(), container_name, *context->device(),
           TypeIndex::Make<io::BigtableRowSetResource>());
     }

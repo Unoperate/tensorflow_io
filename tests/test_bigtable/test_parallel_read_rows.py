@@ -20,9 +20,7 @@
 import os
 from .bigtable_emulator import BigtableEmulator
 from tensorflow_io.python.ops import core_ops
-from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import (
-    BigtableClient,
-)
+from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
 import tensorflow_io.python.ops.bigtable.bigtable_row_range as row_range
 import tensorflow_io.python.ops.bigtable.bigtable_row_set as row_set
 import tensorflow as tf
@@ -138,10 +136,7 @@ class BigtableParallelReadTest(test.TestCase):
         samples = [
             s
             for s in core_ops.bigtable_sample_row_sets(
-                client._client_resource,
-                rs._impl,
-                "test-table",
-                num_parallel_calls,
+                client._client_resource, rs._impl, "test-table", num_parallel_calls,
             )
         ]
         self.assertEqual(len(samples), num_parallel_calls)
@@ -150,10 +145,7 @@ class BigtableParallelReadTest(test.TestCase):
         samples = [
             s
             for s in core_ops.bigtable_sample_row_sets(
-                client._client_resource,
-                rs._impl,
-                "test-table",
-                num_parallel_calls,
+                client._client_resource, rs._impl, "test-table", num_parallel_calls,
             )
         ]
 
@@ -165,10 +157,7 @@ class BigtableParallelReadTest(test.TestCase):
         samples = [
             s
             for s in core_ops.bigtable_sample_row_sets(
-                client._client_resource,
-                rs._impl,
-                "test-table",
-                num_parallel_calls,
+                client._client_resource, rs._impl, "test-table", num_parallel_calls,
             )
         ]
         self.assertEqual(len(samples), num_parallel_calls)
