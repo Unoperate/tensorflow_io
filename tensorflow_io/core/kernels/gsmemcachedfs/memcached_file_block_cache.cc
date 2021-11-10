@@ -759,7 +759,7 @@ int64 MemcachedFileBlockCache::AddToCacheBuffer(const string& memc_key,
     cache_buffer_keys_.push_back(memc_key);
     auto page = absl::make_unique<std::vector<char>>();
     page->assign(data->begin(), data->end());
-    cache_buffer_map_.emplace(memc_key, std::move(page));
+    cache_buffer_map_.emplace(memc_key, page.release());
   }
   return cache_buffer_keys_.size();
 }
