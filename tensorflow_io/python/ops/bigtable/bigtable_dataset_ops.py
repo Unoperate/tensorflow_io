@@ -43,7 +43,7 @@ class BigtableTable:
         num_parallel_calls=1,
         row_set: RowSet = from_rows_or_ranges(infinite()),
     ):
-        samples = core_ops.bigtable_sample_row_sets(
+        samples = core_ops.bigtable_split_row_set_evenly(
             self._client_resource, row_set._impl, self._table_id, num_parallel_calls,
         )
 

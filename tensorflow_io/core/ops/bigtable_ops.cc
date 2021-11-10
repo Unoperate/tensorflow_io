@@ -93,7 +93,7 @@ REGISTER_OP("BigtableRowSetIntersect")
     .Output("result_row_set: resource")
     .SetShapeFn(shape_inference::ScalarShape);
 
-REGISTER_OP("BigtableSampleRowSets")
+REGISTER_OP("BigtableSplitRowSetEvenly")
     .Attr("container: string = ''")
     .Attr("shared_name: string = ''")
     .Input("client: resource")

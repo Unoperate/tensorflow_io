@@ -152,7 +152,6 @@ class Iterator : public DatasetIterator<Dataset> {
         table_(this->dataset()->client_resource().CreateTable(table_id)),
         reader_(this->table_.ReadRows(
             this->dataset()->row_set_resource().row_set(),
-            // cbt::RowRange::InfiniteRange(),
             cbt::Filter::Chain(CreateColumnsFilter(columns_),
                                cbt::Filter::Latest(1)))),
         it_(this->reader_.begin()),
@@ -396,10 +395,10 @@ bool RowSetIntersectsRange(cbt::RowSet const& row_set,
   return !row_set.Intersect(range).IsEmpty();
 }
 
-class BigtableSampleRowSetsOp : public OpKernel {
+class BigtableSplitRowSetEvenlyOp : public OpKernel {
  public:
-  explicit BigtableSampleRowSetsOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
-    VLOG(1) << "BigtableSampleRowSetsOp ctor ";
+  explicit BigtableSplitRowSetEvenlyOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
+    VLOG(1) << "BigtableSplitRowSetEvenlyOp ctor ";
     OP_REQUIRES_OK(ctx, ctx->GetAttr("table_id", &table_id_));
     OP_REQUIRES_OK(ctx,
                    ctx->GetAttr("num_parallel_calls", &num_parallel_calls_));
@@ -488,8 +487,8 @@ class BigtableSampleRowSetsOp : public OpKernel {
   int num_parallel_calls_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("BigtableSampleRowSets").Device(DEVICE_CPU),
-                        BigtableSampleRowSetsOp);
+REGISTER_KERNEL_BUILDER(Name("BigtableSplitRowSetEvenly").Device(DEVICE_CPU),
+                        BigtableSplitRowSetEvenlyOp);
 
 }  // namespace
 }  // namespace data

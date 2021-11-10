@@ -149,55 +149,5 @@ class BigtableRowSetIntersectOp : public OpKernel {
 REGISTER_KERNEL_BUILDER(Name("BigtableRowSetIntersect").Device(DEVICE_CPU),
                         BigtableRowSetIntersectOp);
 
-class BigtableRowSetIntersectTensorOp : public OpKernel {
- public:
-  explicit BigtableRowSetIntersectTensorOp(OpKernelConstruction* context)
-      : OpKernel(context) {}
-
-  void Compute(OpKernelContext* context) override TF_LOCKS_EXCLUDED(mu_) {
-    mutex_lock l(mu_);
-    ResourceMgr* mgr = context->resource_manager();
-    OP_REQUIRES_OK(context, cinfo_.Init(mgr, def()));
-
-    BigtableRowSetResource* row_set_resource;
-    OP_REQUIRES_OK(
-        context, GetResourceFromContext(context, "row_set", &row_set_resource));
-    core::ScopedUnref row_set_resource_unref(row_set_resource);
-
-    const Tensor* row_keys_tensor;
-    OP_REQUIRES_OK(context,
-                   context->input("row_range_tensor", &row_keys_tensor));
-    auto row_keys = row_keys_tensor->tensor<tstring, 1>();
-
-    VLOG(1) << "RowsetIntersectTensor intersecting: [" << row_keys(0) << ","
-            << row_keys(1) << ")";
-
-    BigtableRowSetResource* result_resource;
-    OP_REQUIRES_OK(
-        context,
-        mgr->LookupOrCreate<BigtableRowSetResource>(
-            cinfo_.container(), cinfo_.name(), &result_resource,
-            [this, row_set_resource, &row_keys](BigtableRowSetResource** ret)
-                TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) {
-                  *ret = new BigtableRowSetResource(row_set_resource->Intersect(
-                      cbt::RowRange::RightOpen(row_keys(0), row_keys(1))));
-                  return Status::OK();
-                }));
-
-    OP_REQUIRES_OK(context, MakeResourceHandleToOutput(
-                                context, 0, cinfo_.container(), cinfo_.name(),
-                                TypeIndex::Make<BigtableRowSetResource>()));
-  }
-
- protected:
-  // Variables accessible from subclasses.
-  mutex mu_;
-  ContainerInfo cinfo_ TF_GUARDED_BY(mu_);
-};
-
-REGISTER_KERNEL_BUILDER(
-    Name("BigtableRowSetIntersectTensor").Device(DEVICE_CPU),
-    BigtableRowSetIntersectTensorOp);
-
 }  // namespace io
 }  // namespace tensorflow
