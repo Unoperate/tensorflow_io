@@ -99,7 +99,7 @@ REGISTER_OP("BigtableSplitRowSetEvenly")
     .Input("client: resource")
     .Input("row_set: resource")
     .Attr("table_id: string")
-    .Attr("num_parallel_calls: int")
+    .Attr("num_splits: int")
     .Output("samples: resource")
     .SetIsStateful()
     .SetShapeFn([](tensorflow::shape_inference::InferenceContext* c) {

@@ -87,11 +87,8 @@ class BigtableClientResource : public ResourceBase {
     VLOG(1) << "BigtableClientResource ctor";
   }
 
-  cbt::Table CreateTable(const std::string& table_id) {
-    VLOG(1) << "CreateTable";
-    cbt::Table table(data_client_, table_id);
-    VLOG(1) << "table crated";
-    return table;
+  const std::shared_ptr<cbt::DataClient>& data_client() const {
+    return data_client_;
   }
 
   ~BigtableClientResource() { VLOG(1) << "BigtableClientResource dtor"; }
@@ -145,13 +142,11 @@ template <typename Dataset>
 class Iterator : public DatasetIterator<Dataset> {
  public:
   explicit Iterator(const typename DatasetIterator<Dataset>::Params& params,
-                    const std::string& table_id,
                     const std::vector<std::string>& columns)
       : DatasetIterator<Dataset>(params),
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
-        table_(this->dataset()->client_resource().CreateTable(table_id)),
-        reader_(this->table_.ReadRows(
-            this->dataset()->row_set_resource().row_set(),
+        reader_(this->dataset()->CreateTable().ReadRows(
+            this->dataset()->row_set(),
             cbt::Filter::Chain(CreateColumnsFilter(columns_),
                                cbt::Filter::Latest(1)))),
         it_(this->reader_.begin()),
@@ -269,7 +264,7 @@ class Iterator : public DatasetIterator<Dataset> {
 
   mutex mu_;
   const std::vector<std::pair<std::string, std::string>> columns_;
-  cbt::Table table_;
+  // cbt::Table table_;
   cbt::RowReader reader_ GUARDED_BY(mu_);
   cbt::v1::internal::RowReaderIterator it_ GUARDED_BY(mu_);
   // we're using a map with const refs to avoid copying strings when searching
@@ -281,12 +276,13 @@ class Iterator : public DatasetIterator<Dataset> {
 
 class Dataset : public DatasetBase {
  public:
-  Dataset(OpKernelContext* ctx, BigtableClientResource* client_resource,
-          io::BigtableRowSetResource* row_set_resource, std::string table_id,
+  Dataset(OpKernelContext* ctx,
+          const std::shared_ptr<cbt::DataClient>& data_client,
+          cbt::RowSet row_set, std::string table_id,
           std::vector<std::string> columns)
       : DatasetBase(DatasetContext(ctx)),
-        client_resource_(*client_resource),
-        row_set_resource_(*row_set_resource),
+        data_client_(data_client),
+        row_set_(std::move(row_set)),
         table_id_(table_id),
         columns_(columns) {
     dtypes_.push_back(DT_STRING);
@@ -299,7 +295,7 @@ class Dataset : public DatasetBase {
     return absl::make_unique<Iterator<Dataset>>(
         typename DatasetIterator<Dataset>::Params{
             this, strings::StrCat(prefix, "::BigtableDataset")},
-        table_id_, columns_);
+        columns_);
   }
 
   const DataTypeVector& output_dtypes() const override { return dtypes_; }
@@ -312,9 +308,16 @@ class Dataset : public DatasetBase {
     return "BigtableDatasetOp::Dataset";
   }
 
-  BigtableClientResource& client_resource() const { return client_resource_; }
-  io::BigtableRowSetResource& row_set_resource() const {
-    return row_set_resource_;
+  const std::shared_ptr<cbt::DataClient>& data_client() const {
+    return data_client_;
+  }
+  const cbt::RowSet& row_set() const { return row_set_; }
+
+  cbt::Table CreateTable() const {
+    VLOG(1) << "CreateTable";
+    cbt::Table table(data_client_, table_id_);
+    VLOG(1) << "table crated";
+    return table;
   }
 
  protected:
@@ -328,8 +331,8 @@ class Dataset : public DatasetBase {
   Status CheckExternalState() const override { return Status::OK(); }
 
  private:
-  BigtableClientResource& client_resource_;
-  io::BigtableRowSetResource& row_set_resource_;
+  std::shared_ptr<cbt::DataClient> const& data_client_;
+  const cbt::RowSet row_set_;
   const std::string table_id_;
   const std::vector<std::string> columns_;
   DataTypeVector dtypes_;
@@ -355,8 +358,8 @@ class BigtableDatasetOp : public DatasetOpKernel {
                    GetResourceFromContext(ctx, "row_set", &row_set_resource));
     core::ScopedUnref row_set_resource_unref_(row_set_resource);
 
-    *output = new Dataset(ctx, client_resource, row_set_resource, table_id_,
-                          columns_);
+    *output = new Dataset(ctx, client_resource->data_client(),
+                          row_set_resource->row_set(), table_id_, columns_);
   }
 
  private:
@@ -401,8 +404,7 @@ class BigtableSplitRowSetEvenlyOp : public OpKernel {
       : OpKernel(ctx) {
     VLOG(1) << "BigtableSplitRowSetEvenlyOp ctor ";
     OP_REQUIRES_OK(ctx, ctx->GetAttr("table_id", &table_id_));
-    OP_REQUIRES_OK(ctx,
-                   ctx->GetAttr("num_parallel_calls", &num_parallel_calls_));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("num_splits", &num_splits_));
   }
 
   void Compute(OpKernelContext* context) override {
@@ -429,7 +431,7 @@ class BigtableSplitRowSetEvenlyOp : public OpKernel {
                      errors::FailedPrecondition("row_set cannot be empty!"));
     }
 
-    auto table = client_resource->CreateTable(table_id_);
+    auto table = cbt::Table(client_resource->data_client(), table_id_);
     auto maybe_sample_row_keys = table.SampleRows();
     OP_REQUIRES_OK(context,
                    GoogleCloudStatusToTfStatus(maybe_sample_row_keys.status()));
@@ -458,11 +460,12 @@ class BigtableSplitRowSetEvenlyOp : public OpKernel {
 
     VLOG(1) << "got array of tablets of size:" << tablets.size();
 
-    size_t output_size = std::min(tablets.size(), (size_t)num_parallel_calls_);
+    size_t output_size = std::min<std::size_t>(tablets.size(), num_splits_);
 
     Tensor* output_tensor = NULL;
-    OP_REQUIRES_OK(context, context->allocate_output(0, {(long)output_size},
-                                                     &output_tensor));
+    OP_REQUIRES_OK(context,
+                   context->allocate_output(0, {static_cast<long>(output_size)},
+                                            &output_tensor));
     auto output_v = output_tensor->tensor<ResourceHandle, 1>();
 
     for (size_t i = 0; i < output_size; i++) {
@@ -492,8 +495,8 @@ class BigtableSplitRowSetEvenlyOp : public OpKernel {
 
  private:
   mutable mutex mu_;
-  std::string table_id_;
-  int num_parallel_calls_;
+  std::string table_id_ GUARDED_BY(mu_);
+  int num_splits_ GUARDED_BY(mu_);
 };
 
 REGISTER_KERNEL_BUILDER(Name("BigtableSplitRowSetEvenly").Device(DEVICE_CPU),
