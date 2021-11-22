@@ -148,7 +148,6 @@ class Iterator : public DatasetIterator<Dataset> {
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
         reader_(this->dataset()->CreateTable().ReadRows(
             this->dataset()->row_set(),
-
             cbt::Filter::Chain(CreateColumnsFilter(columns_),
                                this->dataset()->filter(),
                                cbt::Filter::Latest(1)))),
