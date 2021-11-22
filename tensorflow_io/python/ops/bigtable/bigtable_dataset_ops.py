@@ -35,15 +35,22 @@ class BigtableTable:
         self._table_id = table_id
         self._client_resource = client_resource
 
-    def read_rows(self, columns: List[str], row_set: RowSet, filter: filters.BigtableFilter = filters.latest()):
-        return _BigtableDataset(self._client_resource, self._table_id, columns, row_set, filter)
+    def read_rows(
+        self,
+        columns: List[str],
+        row_set: RowSet,
+        filter: filters.BigtableFilter = filters.latest(),
+    ):
+        return _BigtableDataset(
+            self._client_resource, self._table_id, columns, row_set, filter
+        )
 
     def parallel_read_rows(
         self,
         columns: List[str],
         num_parallel_calls=tf.data.AUTOTUNE,
         row_set: RowSet = from_rows_or_ranges(infinite()),
-        filter: filters.BigtableFilter = filters.latest()
+        filter: filters.BigtableFilter = filters.latest(),
     ):
 
         print("calling parallel read_rows with row_set:", row_set)
@@ -71,7 +78,12 @@ class _BigtableDataset(dataset_ops.DatasetSource):
     """_BigtableDataset represents a dataset that retrieves keys and values."""
 
     def __init__(
-        self, client_resource, table_id: str, columns: List[str], row_set: RowSet, filter
+        self,
+        client_resource,
+        table_id: str,
+        columns: List[str],
+        row_set: RowSet,
+        filter,
     ):
         self._table_id = table_id
         self._columns = columns
