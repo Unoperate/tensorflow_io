@@ -42,8 +42,8 @@ class BigtableTimestampRangeFilterOp
   explicit BigtableTimestampRangeFilterOp(OpKernelConstruction* ctx)
       : AbstractBigtableResourceOp<BigtableFilterResource>(ctx) {
     VLOG(1) << "BigtableTimestampRangeFilterOp ctor ";
-    OP_REQUIRES_OK(ctx, ctx->GetAttr("start", &start_ts_us_));
-    OP_REQUIRES_OK(ctx, ctx->GetAttr("end", &end_ts_us_));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("start_ts_us", &start_ts_us_));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("end_ts_us", &end_ts_us_));
   }
 
  private:
