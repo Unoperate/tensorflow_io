@@ -146,19 +146,12 @@ class Iterator : public DatasetIterator<Dataset> {
                     const std::vector<std::string>& columns)
       : DatasetIterator<Dataset>(params),
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
-<<<<<<< HEAD
         reader_(this->dataset()->CreateTable().ReadRows(
             this->dataset()->row_set(),
-            cbt::Filter::Chain(CreateColumnsFilter(columns_),
-                               cbt::Filter::Latest(1)))),
-=======
-        reader_(
-            this->dataset()->client_resource().CreateTable(table_id).ReadRows(
-                cbt::RowRange::InfiniteRange(),
+            
                 cbt::Filter::Chain(CreateColumnsFilter(columns_),
                                    this->dataset()->filter(),
                                    cbt::Filter::Latest(1)))),
->>>>>>> 4489e24... add filters to python api
         it_(this->reader_.begin()),
         column_to_idx_(CreateColumnToIdxMap(columns_)) {
     VLOG(1) << "DatasetIterator ctor";
