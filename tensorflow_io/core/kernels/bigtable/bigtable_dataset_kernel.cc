@@ -148,10 +148,10 @@ class Iterator : public DatasetIterator<Dataset> {
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
         reader_(this->dataset()->CreateTable().ReadRows(
             this->dataset()->row_set(),
-            
-                cbt::Filter::Chain(CreateColumnsFilter(columns_),
-                                   this->dataset()->filter(),
-                                   cbt::Filter::Latest(1)))),
+
+            cbt::Filter::Chain(CreateColumnsFilter(columns_),
+                               this->dataset()->filter(),
+                               cbt::Filter::Latest(1)))),
         it_(this->reader_.begin()),
         column_to_idx_(CreateColumnToIdxMap(columns_)) {
     VLOG(1) << "DatasetIterator ctor";
@@ -363,14 +363,15 @@ class BigtableDatasetOp : public DatasetOpKernel {
     OP_REQUIRES_OK(ctx,
                    GetResourceFromContext(ctx, "row_set", &row_set_resource));
     core::ScopedUnref row_set_resource_unref_(row_set_resource);
-    
+
     io::BigtableFilterResource* filter_resource;
     OP_REQUIRES_OK(ctx,
                    GetResourceFromContext(ctx, "filter", &filter_resource));
     core::ScopedUnref filter_resource_unref_(filter_resource);
 
     *output = new Dataset(ctx, client_resource->data_client(),
-                          row_set_resource->row_set(), filter_resource->filter(), table_id_, columns_);
+                          row_set_resource->row_set(),
+                          filter_resource->filter(), table_id_, columns_);
   }
 
  private:
