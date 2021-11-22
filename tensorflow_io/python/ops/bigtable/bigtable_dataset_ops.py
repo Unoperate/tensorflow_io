@@ -75,6 +75,7 @@ class _BigtableDataset(dataset_ops.DatasetSource):
     ):
         self._table_id = table_id
         self._columns = columns
+        self._filter = filter
         self._element_spec = tf.TensorSpec(shape=[len(columns)], dtype=dtypes.string)
 
         variant_tensor = core_ops.bigtable_dataset(
