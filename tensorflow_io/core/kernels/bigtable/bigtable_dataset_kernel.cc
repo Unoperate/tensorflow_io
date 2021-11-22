@@ -22,7 +22,7 @@ limitations under the License.
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/resource_mgr.h"
 #include "tensorflow/core/framework/resource_op_kernel.h"
-#include "tensorflow_io/core/kernels/bigtable/bigtable_lib.h"
+#include "tensorflow_io/core/kernels/bigtable/serialization.h"
 #include "tensorflow_io/core/kernels/bigtable/bigtable_row_set.h"
 #include "tensorflow_io/core/kernels/bigtable/bigtable_version_filters.h"
 
@@ -186,7 +186,7 @@ class Iterator : public DatasetIterator<Dataset> {
       if (column_idx != column_to_idx_.end()) {
         VLOG(1) << "getting column:" << column_idx->second;
         TF_RETURN_IF_ERROR(
-            PutCellValueInTensor(res, column_idx->second, dtype, cell));
+            io::PutCellValueInTensor(res, column_idx->second, dtype, cell));
       } else {
         LOG(ERROR) << "column " << cell.family_name() << ":"
                    << cell.column_qualifier()
