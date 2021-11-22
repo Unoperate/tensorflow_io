@@ -264,7 +264,6 @@ class Iterator : public DatasetIterator<Dataset> {
 
   mutex mu_;
   const std::vector<std::pair<std::string, std::string>> columns_;
-  // cbt::Table table_;
   cbt::RowReader reader_ GUARDED_BY(mu_);
   cbt::v1::internal::RowReaderIterator it_ GUARDED_BY(mu_);
   // we're using a map with const refs to avoid copying strings when searching
