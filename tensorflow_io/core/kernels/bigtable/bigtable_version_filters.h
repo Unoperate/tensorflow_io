@@ -46,14 +46,14 @@ class BigtableFilterResource : public ResourceBase {
     return res;
   }
 
-  google::cloud::bigtable::Filter& filter() { return filter_; }
+  const google::cloud::bigtable::Filter& filter() const { return filter_; }
 
   string DebugString() const override {
     return "BigtableFilterResource:{" + ToString() + "}";
   }
 
  private:
-  google::cloud::bigtable::Filter filter_;
+  const google::cloud::bigtable::Filter filter_;
 };
 
 

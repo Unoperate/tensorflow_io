@@ -156,7 +156,7 @@ class Iterator : public DatasetIterator<Dataset> {
             this->dataset()->client_resource().CreateTable(table_id).ReadRows(
                 cbt::RowRange::InfiniteRange(),
                 cbt::Filter::Chain(CreateColumnsFilter(columns_),
-                                   this->dataset()->filter_resource().filter(),
+                                   this->dataset()->filter(),
                                    cbt::Filter::Latest(1)))),
 >>>>>>> 4489e24... add filters to python api
         it_(this->reader_.begin()),
@@ -287,14 +287,12 @@ class Dataset : public DatasetBase {
  public:
   Dataset(OpKernelContext* ctx,
           const std::shared_ptr<cbt::DataClient>& data_client,
-          cbt::RowSet row_set, std::string table_id,
-          io::BigtableFilterResource* filter_resource,
+          cbt::RowSet row_set, cbt::Filter filter, std::string table_id,
           std::vector<std::string> columns)
       : DatasetBase(DatasetContext(ctx)),
         data_client_(data_client),
         row_set_(std::move(row_set)),
-        filter_resource_(*filter_resource),
-        filter_resource_unref_(filter_resource),
+        filter_(std::move(filter)),
         table_id_(table_id),
         columns_(columns) {
     dtypes_.push_back(DT_STRING);
@@ -332,9 +330,7 @@ class Dataset : public DatasetBase {
     return table;
   }
 
-  io::BigtableFilterResource& filter_resource() const {
-    return filter_resource_;
-  }
+  const cbt::Filter& filter() const { return filter_; }
 
  protected:
   Status AsGraphDefInternal(SerializationContext* ctx,
@@ -349,8 +345,7 @@ class Dataset : public DatasetBase {
  private:
   std::shared_ptr<cbt::DataClient> const& data_client_;
   const cbt::RowSet row_set_;
-  io::BigtableFilterResource& filter_resource_;
-  const core::ScopedUnref filter_resource_unref_;
+  cbt::Filter filter_;
   const std::string table_id_;
   const std::vector<std::string> columns_;
   DataTypeVector dtypes_;
@@ -382,7 +377,7 @@ class BigtableDatasetOp : public DatasetOpKernel {
     core::ScopedUnref filter_resource_unref_(filter_resource);
 
     *output = new Dataset(ctx, client_resource->data_client(),
-                          row_set_resource->row_set(), table_id_, filter_resource, columns_);
+                          row_set_resource->row_set(), filter_resource->filter(), table_id_, columns_);
   }
 
  private:

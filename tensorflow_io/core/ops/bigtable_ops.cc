@@ -27,11 +27,8 @@ REGISTER_OP("BigtableClient")
 
 REGISTER_OP("BigtableDataset")
     .Input("client: resource")
-<<<<<<< HEAD
     .Input("row_set: resource")
-=======
     .Input("filter: resource")
->>>>>>> 4489e24... add filters to python api
     .Attr("table_id: string")
     .Attr("columns: list(string) >= 1")
     .Output("handle: variant")

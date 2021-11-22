@@ -31,9 +31,6 @@ class BigtableLatestFilterOp
   StatusOr<BigtableFilterResource*> CreateResource() override {
     return new BigtableFilterResource(cbt::Filter::Latest(1));
   }
-
- private:
-  mutable mutex mu_;
 };
 
 REGISTER_KERNEL_BUILDER(Name("BigtableLatestFilter").Device(DEVICE_CPU),
@@ -45,19 +42,18 @@ class BigtableTimestampRangeFilterOp
   explicit BigtableTimestampRangeFilterOp(OpKernelConstruction* ctx)
       : AbstractBigtableResourceOp<BigtableFilterResource>(ctx) {
     VLOG(1) << "BigtableTimestampRangeFilterOp ctor ";
-    OP_REQUIRES_OK(ctx, ctx->GetAttr("start", &start_));
-    OP_REQUIRES_OK(ctx, ctx->GetAttr("end", &end_));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("start", &start_ts_us_));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("end", &end_ts_us_));
   }
 
  private:
   StatusOr<BigtableFilterResource*> CreateResource() override {
-    return new BigtableFilterResource(cbt::Filter::TimestampRangeMicros(start_, end_));
+    return new BigtableFilterResource(cbt::Filter::TimestampRangeMicros(start_ts_us_, end_ts_us_));
   }
 
  private:
-  mutable mutex mu_;
-  int64_t start_;
-  int64_t end_;
+  int64_t start_ts_us_;
+  int64_t end_ts_us_;
 };
 
 REGISTER_KERNEL_BUILDER(Name("BigtableTimestampRangeFilter").Device(DEVICE_CPU),
@@ -81,9 +77,6 @@ class BigtablePrintFilterOp : public OpKernel {
 
     output_v(0) = resource->ToString();
   }
-
- private:
-  mutable mutex mu_;
 };
 
 REGISTER_KERNEL_BUILDER(Name("BigtablePrintFilter").Device(DEVICE_CPU),
