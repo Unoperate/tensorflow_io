@@ -16,7 +16,8 @@ limitations under the License.
 
 #include "tensorflow_io/core/kernels/bigtable/serialization.h"
 #include "rpc/xdr.h"
-#include "tensorflow/core/framework/dataset.h"
+#include "tensorflow/core/platform/errors.h"
+#include "tensorflow/core/platform/statusor.h"
 
 namespace tensorflow {
 namespace io {

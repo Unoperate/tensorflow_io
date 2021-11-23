@@ -11,12 +11,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-==============================================================================
-
-Byte representation of basic types may depend on language and architecture, thus
-we need something that is invariant and consistent with HBase. XDR library seems
-to satisfy those constraints.
-*/
+==============================================================================*/
 
 #ifndef SERIALIZATION_H
 #define SERIALIZATION_H
@@ -27,9 +22,13 @@ to satisfy those constraints.
 namespace tensorflow {
 namespace io {
 
-Status PutCellValueInTensor(Tensor& tensor, size_t index,
-                                   DataType cell_type,
-                                   google::cloud::bigtable::Cell const& cell);
+// Bigtable only stores values as byte buffers - except for int64 the server
+// side does not have any notion of types. Tensorflow, needs to store shorter
+// integers, floats, doubles, so we needed to decide on how. We chose to follow
+// what HBase does, since there is a path for migrating from HBase to Bigtable.
+// XDR seems to match what HBase does.
+Status PutCellValueInTensor(Tensor& tensor, size_t index, DataType cell_type,
+                            google::cloud::bigtable::Cell const& cell);
 
 }  // namespace io
 }  // namespace tensorflow
