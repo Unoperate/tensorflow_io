@@ -22,11 +22,7 @@ to satisfy those constraints.
 #define SERIALIZATION_H
 
 #include "google/cloud/bigtable/table.h"
-#include "rpc/xdr.h" /* xdr is a sub-library of rpc */
-#include "tensorflow/core/framework/common_shape_fns.h"
-#include "tensorflow/core/framework/dataset.h"
-#include "tensorflow/core/framework/op.h"
-#include "tensorflow/core/framework/op_kernel.h"
+#include "tensorflow/core/framework/tensor.h"
 
 namespace tensorflow {
 namespace io {

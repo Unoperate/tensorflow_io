@@ -15,20 +15,11 @@ limitations under the License.
 */
 
 #include "tensorflow_io/core/kernels/bigtable/serialization.h"
+#include "rpc/xdr.h"
+#include "tensorflow/core/framework/dataset.h"
 
 namespace tensorflow {
 namespace io {
-
-inline StatusOr<std::string> FloatToBytes(float v) {
-  char buffer[sizeof(v)];
-  XDR xdrs;
-  xdrmem_create(&xdrs, buffer, sizeof(v), XDR_ENCODE);
-  if (!xdr_float(&xdrs, &v)) {
-    return errors::Internal("Error writing float to byte array.");
-  }
-  std::string s(buffer, sizeof(v));
-  return s;
-}
 
 inline StatusOr<float> BytesToFloat(std::string const& s) {
   float v;
@@ -38,17 +29,6 @@ inline StatusOr<float> BytesToFloat(std::string const& s) {
     return errors::InvalidArgument("Error reading float from byte array.");
   }
   return v;
-}
-
-inline StatusOr<std::string> DoubleToBytes(double v) {
-  char buffer[sizeof(v)];
-  XDR xdrs;
-  xdrmem_create(&xdrs, buffer, sizeof(v), XDR_ENCODE);
-  if (!xdr_double(&xdrs, &v)) {
-    return errors::Internal("Error writing double to byte array.");
-  }
-  std::string s(buffer, sizeof(v));
-  return s;
 }
 
 inline StatusOr<double> BytesToDouble(std::string const& s) {
@@ -61,17 +41,6 @@ inline StatusOr<double> BytesToDouble(std::string const& s) {
   return v;
 }
 
-inline StatusOr<std::string> Int64ToBytes(int64_t v) {
-  char buffer[sizeof(v)];
-  XDR xdrs;
-  xdrmem_create(&xdrs, buffer, sizeof(v), XDR_ENCODE);
-  if (!xdr_int64_t(&xdrs, &v)) {
-    return errors::Internal("Error writing int64 to byte array.");
-  }
-  std::string s(buffer, sizeof(v));
-  return s;
-}
-
 inline StatusOr<int64_t> BytesToInt64(std::string const& s) {
   int64_t v;
   XDR xdrs;
@@ -82,17 +51,6 @@ inline StatusOr<int64_t> BytesToInt64(std::string const& s) {
   return v;
 }
 
-inline StatusOr<std::string> Int32ToBytes(int32_t v) {
-  char buffer[sizeof(v)];
-  XDR xdrs;
-  xdrmem_create(&xdrs, buffer, sizeof(v), XDR_ENCODE);
-  if (!xdr_int32_t(&xdrs, &v)) {
-    return errors::Internal("Error writing int32 to byte array.");
-  }
-  std::string s(buffer, sizeof(v));
-  return s;
-}
-
 inline StatusOr<int32_t> BytesToInt32(std::string const& s) {
   int32_t v;
   XDR xdrs;
@@ -101,17 +59,6 @@ inline StatusOr<int32_t> BytesToInt32(std::string const& s) {
     return errors::InvalidArgument("Error reading int32 from byte array.");
   }
   return v;
-}
-
-inline StatusOr<std::string> BoolToBytes(bool_t v) {
-  char buffer[sizeof(v)];
-  XDR xdrs;
-  xdrmem_create(&xdrs, buffer, sizeof(v), XDR_ENCODE);
-  if (!xdr_bool(&xdrs, &v)) {
-    return errors::Internal("Error writing bool to byte array.");
-  }
-  std::string s(buffer, sizeof(v));
-  return s;
 }
 
 inline StatusOr<bool_t> BytesToBool(std::string const& s) {
