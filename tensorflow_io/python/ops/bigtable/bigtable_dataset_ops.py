@@ -49,19 +49,26 @@ class BigtableTable:
         columns: List[str],
         row_set: bigtable_row_set.RowSet,
         filter: filters.BigtableFilter = filters.latest(),
-        output_type=tf.string
+        output_type=tf.string,
     ):
         return _BigtableDataset(
-            self._client_resource, self._table_id, columns, row_set, filter, output_type,
+            self._client_resource,
+            self._table_id,
+            columns,
+            row_set,
+            filter,
+            output_type,
         )
 
     def parallel_read_rows(
         self,
         columns: List[str],
         num_parallel_calls=tf.data.AUTOTUNE,
-        row_set: bigtable_row_set.RowSet = bigtable_row_set.from_rows_or_ranges(bigtable_row_range.infinite()),
+        row_set: bigtable_row_set.RowSet = bigtable_row_set.from_rows_or_ranges(
+            bigtable_row_range.infinite()
+        ),
         filter: filters.BigtableFilter = filters.latest(),
-        output_type=tf.string
+        output_type=tf.string,
     ):
 
         samples = core_ops.bigtable_split_row_set_evenly(
@@ -69,7 +76,9 @@ class BigtableTable:
         )
 
         def map_func(idx):
-            return self.read_rows(columns, bigtable_row_set.RowSet(samples[idx]), filter, output_type)
+            return self.read_rows(
+                columns, bigtable_row_set.RowSet(samples[idx]), filter, output_type
+            )
 
         # We interleave a dataset of sample's indexes instead of a dataset of
         # samples, because Dataset.from_tensor_slices attempts to copy the
