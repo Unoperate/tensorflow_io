@@ -40,11 +40,8 @@ class BigtableClient:
 
 
 class BigtableTable:
-    """Entry point for reading data from Cloud Bigtable.
-      Prefetches the sample_row_keys and creates a list with them.
-      Each sample is a range open from the right, represented as a pair of two
-      row_keys: the first key included in the sample and the first that is
-      too big.
+    """Entry point for reading data from Cloud Bigtable. This object represents
+      a Bigtable Table and provides basic methods for reading from it.
     """
 
     def __init__(self, client_resource: tf.Tensor, table_id: str):
@@ -63,7 +60,7 @@ class BigtableTable:
         filter: filters.BigtableFilter = filters.latest(),
         output_type=tf.string,
     ):
-        """Retrieves values from Google Bigtable.
+        """Retrieves values from Google Bigtable sorted by RowKeys.
         Args:
             columns (List[str]): the list of columns to read from; the order on
                 this list will determine the order in the output tensors
@@ -91,8 +88,9 @@ class BigtableTable:
         filter: filters.BigtableFilter = filters.latest(),
         output_type=tf.string,
     ):
-        """Retrieves values from Google Bigtable in parallel. The ammount of work is split between workers
-        based on SampleRowKeys.
+        """Retrieves values from Google Bigtable in parallel. The ammount of work 
+        is split between workers based on SampleRowKeys. Keep in mind that when
+        reading in parallel, rows are not read in any particular order.
         Args:
             columns (List[str]): the list of columns to read from; the order on
                 this list will determine the order in the output tensors

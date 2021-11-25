@@ -20,7 +20,8 @@ from typing import Union
 
 
 class RowSet:
-    """Python wrapper for google::cloud::bigtable::RowSet"""
+    """Object representing a set of rows by keeping a list of RowKeys and 
+    RowRanges that the set consists of."""
 
     def __init__(self, impl):
         self._impl = impl
@@ -57,7 +58,7 @@ def from_rows_or_ranges(*args: Union[str, bigtable_row_range.RowRange]) -> RowSe
 
 
 def intersect(row_set: RowSet, row_range: bigtable_row_range.RowRange) -> RowSet:
-    """Modify a row set by intersecting its contents with a row range.
+    """Modify a RowSet by intersecting its contents with a RowRange.
 
     All rows intersecting with the given range will be removed from the set
     and all row ranges will either be adjusted so that they do not cover

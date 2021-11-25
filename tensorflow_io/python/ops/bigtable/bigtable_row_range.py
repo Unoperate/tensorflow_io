@@ -18,7 +18,7 @@ from tensorflow_io.python.ops import core_ops
 
 
 class RowRange:
-    """Python wrapper for google::cloud::bigtable::RowRange"""
+    """Object representing a range of rows."""
 
     def __init__(self, impl) -> None:
         self._impl = impl
