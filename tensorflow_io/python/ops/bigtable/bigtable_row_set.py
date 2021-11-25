@@ -20,7 +20,7 @@ from typing import Union
 
 
 class RowSet:
-    """Object representing a set of rows by keeping a list of RowKeys and 
+    """Object representing a set of rows by keeping a list of RowKeys and
     RowRanges that the set consists of."""
 
     def __init__(self, impl):
