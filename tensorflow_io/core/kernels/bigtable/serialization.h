@@ -35,7 +35,7 @@ class Serializer {
             use_xdr_ = false;
         } else {
             VLOG(1) << "using XDR for serialization";
-            use_xdr_ = false;
+            use_xdr_ = true;
         }
     }
 
