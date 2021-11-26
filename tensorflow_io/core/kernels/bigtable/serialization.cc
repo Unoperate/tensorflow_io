@@ -26,7 +26,7 @@ namespace {
 
 #include <winsock.h>
 
-inline StatusOr<bool> BytesToBool(const std::string &bytes) {
+inline StatusOr<bool> BytesToBool(const std::string& bytes) {
   union {
     char byte;
     bool res;
@@ -38,7 +38,7 @@ inline StatusOr<bool> BytesToBool(const std::string &bytes) {
   return u.res;
 }
 
-inline StatusOr<uint32_t> BytesToInt32(const std::string &bytes) {
+inline StatusOr<uint32_t> BytesToInt32(const std::string& bytes) {
   union {
     char bytes[4];
     uint32_t res;
@@ -50,7 +50,7 @@ inline StatusOr<uint32_t> BytesToInt32(const std::string &bytes) {
   return ntohl(u.res);
 }
 
-inline StatusOr<uint64_t> BytesToInt64(const std::string &bytes) {
+inline StatusOr<uint64_t> BytesToInt64(const std::string& bytes) {
   union {
     char bytes[8];
     uint32_t res;
