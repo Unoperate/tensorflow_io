@@ -186,7 +186,7 @@ class Iterator : public DatasetIterator<Dataset> {
       if (column_idx != column_to_idx_.end()) {
         VLOG(1) << "getting column:" << column_idx->second;
         TF_RETURN_IF_ERROR(
-            io::PutCellValueInTensor(res, column_idx->second, dtype, cell));
+            serializer_.PutCellValueInTensor(res, column_idx->second, dtype, cell));
       } else {
         LOG(ERROR) << "column " << cell.family_name() << ":"
                    << cell.column_qualifier()
@@ -275,6 +275,7 @@ class Iterator : public DatasetIterator<Dataset> {
   const absl::flat_hash_map<std::pair<const std::string&, const std::string&>,
                             size_t>
       column_to_idx_;
+  const io::Serializer serializer_;
 };
 
 class Dataset : public DatasetBase {
