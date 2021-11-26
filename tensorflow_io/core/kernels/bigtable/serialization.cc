@@ -16,12 +16,80 @@ limitations under the License.
 
 #include "tensorflow_io/core/kernels/bigtable/serialization.h"
 
-#include "rpc/xdr.h"
 #include "tensorflow/core/platform/errors.h"
 #include "tensorflow/core/platform/statusor.h"
 
 namespace tensorflow {
 namespace io {
+namespace {
+#ifdef _WIN32
+
+#include <winsock.h>
+
+inline StatusOr<bool> BytesToBool(const std::string &bytes) {
+  union {
+    char byte;
+    bool res;
+  } u;
+  if (bytes.size() != 1U) {
+    return errors::InvalidArgument("Invalid bool representation.");
+  }
+  u.byte = bytes[0];
+  return u.res;
+}
+
+inline StatusOr<uint32_t> BytesToInt32(const std::string &bytes) {
+  union {
+    char bytes[4];
+    uint32_t res;
+  } u;
+  if (bytes.size() != 4U) {
+    return errors::InvalidArgument("Invalid int32 representation.");
+  }
+  memcpy(u.bytes, bytes.data(), 4);
+  return ntohl(u.res);
+}
+
+inline StatusOr<uint64_t> BytesToInt64(const std::string &bytes) {
+  union {
+    char bytes[8];
+    uint32_t res;
+  } u;
+  if (bytes.size() != 8U) {
+    return errors::InvalidArgument("Invalid int64 representation.");
+  }
+  memcpy(u.bytes, bytes.data(), 8);
+  return ntohl(u.res);  // <======= FIXME! BUG! HELP!
+}
+
+inline StatusOr<float> BytesToFloat(std::string const& s) {
+  auto const int_rep = BytesToInt32(s);
+  if (!int_rep.ok()) {
+    return int_rep;
+  }
+  union {
+    float res;
+    uint32_t int_rep;
+  } u;
+  u.int_rep = *int_rep;
+  return u.res;
+}
+
+inline StatusOr<double> BytesToDouble(std::string const& s) {
+  auto const int_rep = BytesToInt64(s);
+  if (!int_rep.ok()) {
+    return int_rep;
+  }
+  union {
+    double res;
+    uint64_t int_rep;
+  } u;
+  u.int_rep = *int_rep;
+  return u.res;
+}
+#else  // _WIN32
+
+#include "rpc/xdr.h"
 
 inline StatusOr<float> BytesToFloat(std::string const& s) {
   float v;
@@ -73,6 +141,8 @@ inline StatusOr<bool_t> BytesToBool(std::string const& s) {
   return v;
 }
 
+#endif  // _WIN32
+}  // namespace
 Status PutCellValueInTensor(Tensor& tensor, size_t index, DataType cell_type,
                             google::cloud::bigtable::Cell const& cell) {
   switch (cell_type) {
