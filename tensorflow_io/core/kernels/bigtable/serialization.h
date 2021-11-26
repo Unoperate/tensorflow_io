@@ -28,8 +28,6 @@ class Serializer {
     public:
 
     Serializer(){
-        VLOG(1) << "checking env TFIO_DONT_USE_XDR";
-            
         const char* var = std::getenv("TFIO_DONT_USE_XDR");
         VLOG(1) << "got env TFIO_DONT_USE_XDR=" << var;
         if(var && var[0] == '1'){
