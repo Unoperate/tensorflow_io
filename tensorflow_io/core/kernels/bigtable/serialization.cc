@@ -29,28 +29,10 @@ namespace {
 
 #include <winsock.h>
 
-inline StatusOr<float> BytesToFloat(const cbt::Cell& cell) {
-  return errors::Unimplemented("Use BytesToFloatWin instead.");
-}
-
-inline StatusOr<double> BytesToDouble(const cbt::Cell& cell) {
-  return errors::Unimplemented("Use BytesToDoubleWin instead.");
-}
-
-inline StatusOr<int64_t> BytesToInt64(const cbt::Cell& cell) {
-  return errors::Unimplemented("Use BytesToInt64Win instead.");
-}
-
-inline StatusOr<int32_t> BytesToInt32(const cbt::Cell& cell) {
-  return errors::Unimplemented("Use BytesToInt32Win instead.");
-}
-
-inline StatusOr<bool_t> BytesToBool(const cbt::Cell& cell) {
-  return errors::Unimplemented("Use BytesToBoolWin instead.");
-}
-
 #else  // _WIN32
 #include <sys/socket.h>
+
+#include "rpc/xdr.h"
 
 inline StatusOr<float> BytesToFloat(const cbt::Cell& cell) {
   std::string const& s = cell.value();
@@ -170,7 +152,35 @@ inline StatusOr<double> BytesToDoubleWin(const cbt::Cell& cell) {
 }
 
 }  // namespace
-Status Serializer::PutCellValueInTensor(
+
+#ifdef _WIN32
+
+std::unique_ptr<Serializer> GetSerializer() {
+  VLOG(1) << "using custom implementation for serialization";
+  return absl::make_unique<CustomSerializer>();
+}
+
+Status XDRSerializer::PutCellValueInTensor(
+    Tensor& tensor, size_t index, DataType cell_type,
+    google::cloud::bigtable::Cell const& cell) const {
+  return errors::Unimplemented("XDR serializer is not available on windows.");
+}
+
+#else  // _WIN32
+
+std::unique_ptr<Serializer> GetSerializer() {
+  const char* var = std::getenv("TFIO_DONT_USE_XDR");
+  VLOG(1) << "got env TFIO_DONT_USE_XDR=" << var;
+  if (var && var[0] == '1') {
+    VLOG(1) << "using custom implementation for serialization";
+    return absl::make_unique<CustomSerializer>();
+  } else {
+    VLOG(1) << "using XDR for serialization";
+    return absl::make_unique<XDRSerializer>();
+  }
+}
+
+Status XDRSerializer::PutCellValueInTensor(
     Tensor& tensor, size_t index, DataType cell_type,
     google::cloud::bigtable::Cell const& cell) const {
   switch (cell_type) {
@@ -180,8 +190,7 @@ Status Serializer::PutCellValueInTensor(
     } break;
     case DT_BOOL: {
       auto tensor_data = tensor.tensor<bool, 1>();
-      auto maybe_parsed_data =
-          use_xdr_ ? BytesToBool(cell) : BytesToBoolWin(cell);
+      auto maybe_parsed_data = BytesToBool(cell);
       if (!maybe_parsed_data.ok()) {
         return maybe_parsed_data.status();
       }
@@ -189,8 +198,7 @@ Status Serializer::PutCellValueInTensor(
     } break;
     case DT_INT32: {
       auto tensor_data = tensor.tensor<int32_t, 1>();
-      auto maybe_parsed_data =
-          use_xdr_ ? BytesToInt32(cell) : BytesToInt32Win(cell);
+      auto maybe_parsed_data = BytesToInt32(cell);
       if (!maybe_parsed_data.ok()) {
         return maybe_parsed_data.status();
       }
@@ -198,8 +206,7 @@ Status Serializer::PutCellValueInTensor(
     } break;
     case DT_INT64: {
       auto tensor_data = tensor.tensor<int64_t, 1>();
-      auto maybe_parsed_data =
-          use_xdr_ ? BytesToInt64(cell) : BytesToInt64Win(cell);
+      auto maybe_parsed_data = BytesToInt64(cell);
       if (!maybe_parsed_data.ok()) {
         return maybe_parsed_data.status();
       }
@@ -207,8 +214,7 @@ Status Serializer::PutCellValueInTensor(
     } break;
     case DT_FLOAT: {
       auto tensor_data = tensor.tensor<float, 1>();
-      auto maybe_parsed_data =
-          use_xdr_ ? BytesToFloat(cell) : BytesToFloatWin(cell);
+      auto maybe_parsed_data = BytesToFloat(cell);
       if (!maybe_parsed_data.ok()) {
         return maybe_parsed_data.status();
       }
@@ -216,8 +222,63 @@ Status Serializer::PutCellValueInTensor(
     } break;
     case DT_DOUBLE: {
       auto tensor_data = tensor.tensor<double, 1>();
-      auto maybe_parsed_data =
-          use_xdr_ ? BytesToDouble(cell) : BytesToDoubleWin(cell);
+      auto maybe_parsed_data = BytesToDouble(cell);
+      if (!maybe_parsed_data.ok()) {
+        return maybe_parsed_data.status();
+      }
+      tensor_data(index) = maybe_parsed_data.ValueOrDie();
+    } break;
+    default:
+      return errors::Unimplemented("Data type not supported.");
+  }
+  return Status::OK();
+}
+
+#endif  // _WIN32
+
+Status CustomSerializer::PutCellValueInTensor(
+    Tensor& tensor, size_t index, DataType cell_type,
+    google::cloud::bigtable::Cell const& cell) const {
+  switch (cell_type) {
+    case DT_STRING: {
+      auto tensor_data = tensor.tensor<tstring, 1>();
+      tensor_data(index) = std::string(cell.value());
+    } break;
+    case DT_BOOL: {
+      auto tensor_data = tensor.tensor<bool, 1>();
+      auto maybe_parsed_data = BytesToBoolWin(cell);
+      if (!maybe_parsed_data.ok()) {
+        return maybe_parsed_data.status();
+      }
+      tensor_data(index) = maybe_parsed_data.ValueOrDie();
+    } break;
+    case DT_INT32: {
+      auto tensor_data = tensor.tensor<int32_t, 1>();
+      auto maybe_parsed_data = BytesToInt32Win(cell);
+      if (!maybe_parsed_data.ok()) {
+        return maybe_parsed_data.status();
+      }
+      tensor_data(index) = maybe_parsed_data.ValueOrDie();
+    } break;
+    case DT_INT64: {
+      auto tensor_data = tensor.tensor<int64_t, 1>();
+      auto maybe_parsed_data = BytesToInt64Win(cell);
+      if (!maybe_parsed_data.ok()) {
+        return maybe_parsed_data.status();
+      }
+      tensor_data(index) = maybe_parsed_data.ValueOrDie();
+    } break;
+    case DT_FLOAT: {
+      auto tensor_data = tensor.tensor<float, 1>();
+      auto maybe_parsed_data = BytesToFloatWin(cell);
+      if (!maybe_parsed_data.ok()) {
+        return maybe_parsed_data.status();
+      }
+      tensor_data(index) = maybe_parsed_data.ValueOrDie();
+    } break;
+    case DT_DOUBLE: {
+      auto tensor_data = tensor.tensor<double, 1>();
+      auto maybe_parsed_data = BytesToDoubleWin(cell);
       if (!maybe_parsed_data.ok()) {
         return maybe_parsed_data.status();
       }

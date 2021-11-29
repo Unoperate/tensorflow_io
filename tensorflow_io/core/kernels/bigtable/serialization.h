@@ -17,7 +17,6 @@ limitations under the License.
 #define SERIALIZATION_H
 
 #include "google/cloud/bigtable/table.h"
-#include "rpc/xdr.h"
 #include "tensorflow/core/framework/tensor.h"
 #include "tensorflow/core/platform/statusor.h"
 
@@ -26,29 +25,28 @@ namespace io {
 
 class Serializer {
  public:
-  Serializer() {
-    const char* var = std::getenv("TFIO_DONT_USE_XDR");
-    VLOG(1) << "got env TFIO_DONT_USE_XDR=" << var;
-    if (var && var[0] == '1') {
-      VLOG(1) << "using custom implementation for serialization";
-      use_xdr_ = false;
-    } else {
-      VLOG(1) << "using XDR for serialization";
-      use_xdr_ = true;
-    }
-  }
-
   // Bigtable only stores values as byte buffers - except for int64 the server
   // side does not have any notion of types. Tensorflow, needs to store shorter
   // integers, floats, doubles, so we needed to decide on how. We chose to
   // follow what HBase does, since there is a path for migrating from HBase to
   // Bigtable. XDR seems to match what HBase does.
+  virtual Status PutCellValueInTensor(
+      Tensor& tensor, size_t index, DataType cell_type,
+      google::cloud::bigtable::Cell const& cell) const = 0;
+  ;
+};
+
+class CustomSerializer : public Serializer {
   Status PutCellValueInTensor(Tensor& tensor, size_t index, DataType cell_type,
                               google::cloud::bigtable::Cell const& cell) const;
-
- private:
-  bool use_xdr_;
 };
+
+class XDRSerializer : public Serializer {
+  Status PutCellValueInTensor(Tensor& tensor, size_t index, DataType cell_type,
+                              google::cloud::bigtable::Cell const& cell) const;
+};
+
+std::unique_ptr<Serializer> GetSerializer();
 
 }  // namespace io
 }  // namespace tensorflow
