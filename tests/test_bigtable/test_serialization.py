@@ -28,8 +28,6 @@ from google.auth.credentials import AnonymousCredentials
 from google.cloud.bigtable import Client
 import datetime
 
-USE_XDR_ENV_VAR_NAME = "TFIO_DONT_USE_XDR"
-
 
 def check_values(test_case, values, table, type_name, tf_dtype):
     for i, r in enumerate(
@@ -134,19 +132,6 @@ class BigtableReadTest(test.TestCase):
         self.emulator.stop()
 
     def test_float_xdr(self):
-        if USE_XDR_ENV_VAR_NAME in os.environ:
-            del os.environ[USE_XDR_ENV_VAR_NAME]
-
-        values = tf.constant(self.data["values"], dtype=tf.float32)
-
-        client = BigtableClient("fake_project", "fake_instance")
-        table = client.get_table("test-table")
-
-        check_values(self, values, table, "float", tf.float32)
-
-    def test_float_win(self):
-        os.environ[USE_XDR_ENV_VAR_NAME] = "1"
-
         values = tf.constant(self.data["values"], dtype=tf.float32)
 
         client = BigtableClient("fake_project", "fake_instance")
@@ -155,18 +140,6 @@ class BigtableReadTest(test.TestCase):
         check_values(self, values, table, "float", tf.float32)
 
     def test_double_xdr(self):
-        if USE_XDR_ENV_VAR_NAME in os.environ:
-            del os.environ[USE_XDR_ENV_VAR_NAME]
-
-        values = tf.constant(self.data["values"], dtype=tf.float64)
-
-        client = BigtableClient("fake_project", "fake_instance")
-        table = client.get_table("test-table")
-
-        check_values(self, values, table, "double", tf.float64)
-
-    def test_double_win(self):
-        os.environ[USE_XDR_ENV_VAR_NAME] = "1"
         values = tf.constant(self.data["values"], dtype=tf.float64)
 
         client = BigtableClient("fake_project", "fake_instance")
@@ -175,19 +148,6 @@ class BigtableReadTest(test.TestCase):
         check_values(self, values, table, "double", tf.float64)
 
     def test_int64_xdr(self):
-        if USE_XDR_ENV_VAR_NAME in os.environ:
-            del os.environ[USE_XDR_ENV_VAR_NAME]
-
-        values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int64)
-
-        client = BigtableClient("fake_project", "fake_instance")
-        table = client.get_table("test-table")
-
-        check_values(self, values, table, "int64", tf.int64)
-
-    def test_int64_win(self):
-        os.environ[USE_XDR_ENV_VAR_NAME] = "1"
-
         values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int64)
 
         client = BigtableClient("fake_project", "fake_instance")
@@ -196,19 +156,6 @@ class BigtableReadTest(test.TestCase):
         check_values(self, values, table, "int64", tf.int64)
 
     def test_int32_xdr(self):
-        if USE_XDR_ENV_VAR_NAME in os.environ:
-            del os.environ[USE_XDR_ENV_VAR_NAME]
-
-        values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int32)
-
-        client = BigtableClient("fake_project", "fake_instance")
-        table = client.get_table("test-table")
-
-        check_values(self, values, table, "int32", tf.int32)
-
-    def test_int32_win(self):
-        os.environ[USE_XDR_ENV_VAR_NAME] = "1"
-
         values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int32)
 
         client = BigtableClient("fake_project", "fake_instance")
@@ -217,19 +164,6 @@ class BigtableReadTest(test.TestCase):
         check_values(self, values, table, "int32", tf.int32)
 
     def test_bool_xdr(self):
-        if USE_XDR_ENV_VAR_NAME in os.environ:
-            del os.environ[USE_XDR_ENV_VAR_NAME]
-
-        values = tf.cast(tf.constant(self.data["values"]), dtype=tf.bool)
-
-        client = BigtableClient("fake_project", "fake_instance")
-        table = client.get_table("test-table")
-
-        check_values(self, values, table, "bool", tf.bool)
-
-    def test_bool_win(self):
-        os.environ[USE_XDR_ENV_VAR_NAME] = "1"
-
         values = tf.cast(tf.constant(self.data["values"]), dtype=tf.bool)
 
         client = BigtableClient("fake_project", "fake_instance")
