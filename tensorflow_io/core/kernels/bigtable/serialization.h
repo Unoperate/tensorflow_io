@@ -36,7 +36,7 @@ class Serializer {
   ;
 };
 
-class CustomSerializer : public Serializer {
+class ReinterpretSerializer : public Serializer {
   Status PutCellValueInTensor(Tensor& tensor, size_t index, DataType cell_type,
                               google::cloud::bigtable::Cell const& cell) const;
 };

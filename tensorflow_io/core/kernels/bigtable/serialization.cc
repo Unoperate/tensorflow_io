@@ -157,7 +157,7 @@ inline StatusOr<double> BytesToDoubleWin(const cbt::Cell& cell) {
 
 std::unique_ptr<Serializer> GetSerializer() {
   VLOG(1) << "using custom implementation for serialization";
-  return absl::make_unique<CustomSerializer>();
+  return absl::make_unique<ReinterpretSerializer>();
 }
 
 Status XDRSerializer::PutCellValueInTensor(
@@ -173,7 +173,7 @@ std::unique_ptr<Serializer> GetSerializer() {
   VLOG(1) << "got env TFIO_DONT_USE_XDR=" << var;
   if (var && var[0] == '1') {
     VLOG(1) << "using custom implementation for serialization";
-    return absl::make_unique<CustomSerializer>();
+    return absl::make_unique<ReinterpretSerializer>();
   } else {
     VLOG(1) << "using XDR for serialization";
     return absl::make_unique<XDRSerializer>();
@@ -236,7 +236,7 @@ Status XDRSerializer::PutCellValueInTensor(
 
 #endif  // _WIN32
 
-Status CustomSerializer::PutCellValueInTensor(
+Status ReinterpretSerializer::PutCellValueInTensor(
     Tensor& tensor, size_t index, DataType cell_type,
     google::cloud::bigtable::Cell const& cell) const {
   switch (cell_type) {
