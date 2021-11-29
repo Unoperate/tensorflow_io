@@ -118,7 +118,7 @@ inline StatusOr<bool_t> BytesToBoolWin(const cbt::Cell& cell) {
     return int_rep;
   }
   union {
-    bool res;
+    bool_t res;
     int32_t int_rep;
   } u;
   u.int_rep = *int_rep;
