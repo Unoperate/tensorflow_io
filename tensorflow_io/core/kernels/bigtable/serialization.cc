@@ -29,8 +29,69 @@ namespace {
 
 #include <winsock.h>
 
+
+inline StatusOr<int32_t> BytesToInt32(const cbt::Cell& cell) {
+  std::string const& bytes = cell.value();
+  union {
+    char bytes[4];
+    int32_t res;
+  } u;
+  if (bytes.size() != 4U) {
+    return errors::InvalidArgument("Invalid int32 representation.");
+  }
+  memcpy(u.bytes, bytes.data(), 4);
+  return ntohl(u.res);
+}
+
+inline StatusOr<int64_t> BytesToInt64(const cbt::Cell& cell) {
+  auto maybe_value = cell.decode_big_endian_integer<int64_t>();
+  if (!maybe_value.ok()) {
+    return errors::InvalidArgument("Invalid int32 representation.");
+  }
+  return maybe_value.value();
+}
+
+inline StatusOr<bool_t> BytesToBool(const cbt::Cell& cell) {
+  auto const int_rep = BytesToInt32(cell);
+  if (!int_rep.ok()) {
+    return int_rep;
+  }
+  union {
+    bool_t res;
+    int32_t int_rep;
+  } u;
+  u.int_rep = *int_rep;
+  return u.res;
+}
+
+inline StatusOr<float> BytesToFloat(const cbt::Cell& cell) {
+  auto const int_rep = BytesToInt32(cell);
+  if (!int_rep.ok()) {
+    return int_rep;
+  }
+  union {
+    float res;
+    int32_t int_rep;
+  } u;
+  u.int_rep = *int_rep;
+  return u.res;
+}
+
+inline StatusOr<double> BytesToDouble(const cbt::Cell& cell) {
+  auto const int_rep = BytesToInt64(cell);
+  if (!int_rep.ok()) {
+    return int_rep;
+  }
+  union {
+    double res;
+    int64_t int_rep;
+  } u;
+  u.int_rep = *int_rep;
+  return u.res;
+}
+
+
 #else  // _WIN32
-#include <sys/socket.h>
 
 #include "rpc/xdr.h"
 
@@ -91,98 +152,12 @@ inline StatusOr<bool_t> BytesToBool(const cbt::Cell& cell) {
 
 #endif  // _WIN32
 
-inline StatusOr<int32_t> BytesToInt32Win(const cbt::Cell& cell) {
-  std::string const& bytes = cell.value();
-  union {
-    char bytes[4];
-    int32_t res;
-  } u;
-  if (bytes.size() != 4U) {
-    return errors::InvalidArgument("Invalid int32 representation.");
-  }
-  memcpy(u.bytes, bytes.data(), 4);
-  return ntohl(u.res);
-}
-
-inline StatusOr<int64_t> BytesToInt64Win(const cbt::Cell& cell) {
-  auto maybe_value = cell.decode_big_endian_integer<int64_t>();
-  if (!maybe_value.ok()) {
-    return errors::InvalidArgument("Invalid int32 representation.");
-  }
-  return maybe_value.value();
-}
-
-inline StatusOr<bool_t> BytesToBoolWin(const cbt::Cell& cell) {
-  auto const int_rep = BytesToInt32Win(cell);
-  if (!int_rep.ok()) {
-    return int_rep;
-  }
-  union {
-    bool_t res;
-    int32_t int_rep;
-  } u;
-  u.int_rep = *int_rep;
-  return u.res;
-}
-
-inline StatusOr<float> BytesToFloatWin(const cbt::Cell& cell) {
-  auto const int_rep = BytesToInt32Win(cell);
-  if (!int_rep.ok()) {
-    return int_rep;
-  }
-  union {
-    float res;
-    int32_t int_rep;
-  } u;
-  u.int_rep = *int_rep;
-  return u.res;
-}
-
-inline StatusOr<double> BytesToDoubleWin(const cbt::Cell& cell) {
-  auto const int_rep = BytesToInt64Win(cell);
-  if (!int_rep.ok()) {
-    return int_rep;
-  }
-  union {
-    double res;
-    int64_t int_rep;
-  } u;
-  u.int_rep = *int_rep;
-  return u.res;
-}
-
 }  // namespace
 
-#ifdef _WIN32
 
-std::unique_ptr<Serializer> GetSerializer() {
-  VLOG(1) << "using custom implementation for serialization";
-  return absl::make_unique<ReinterpretSerializer>();
-}
-
-Status XDRSerializer::PutCellValueInTensor(
+Status PutCellValueInTensor(
     Tensor& tensor, size_t index, DataType cell_type,
-    google::cloud::bigtable::Cell const& cell) const {
-  return errors::Unimplemented("XDR serializer is not available on windows.");
-}
-
-#else  // _WIN32
-
-std::unique_ptr<Serializer> GetSerializer() {
-  const char* var = std::getenv("TFIO_DONT_USE_XDR");
-  VLOG(1) << "got env TFIO_DONT_USE_XDR=" << var;
-  if (var && var[0] == '1') {
-    VLOG(1) << "using custom implementation for serialization";
-    return absl::make_unique<ReinterpretSerializer>();
-  } else {
-    VLOG(1) << "using XDR for serialization";
-    return absl::make_unique<XDRSerializer>();
-  }
-}
-
-Status XDRSerializer::PutCellValueInTensor(
-    Tensor& tensor, size_t index, DataType cell_type,
-    google::cloud::bigtable::Cell const& cell) const {
+    google::cloud::bigtable::Cell const& cell) {
   switch (cell_type) {
     case DT_STRING: {
       auto tensor_data = tensor.tensor<tstring, 1>();
@@ -234,61 +209,6 @@ Status XDRSerializer::PutCellValueInTensor(
   return Status::OK();
 }
 
-#endif  // _WIN32
-
-Status ReinterpretSerializer::PutCellValueInTensor(
-    Tensor& tensor, size_t index, DataType cell_type,
-    google::cloud::bigtable::Cell const& cell) const {
-  switch (cell_type) {
-    case DT_STRING: {
-      auto tensor_data = tensor.tensor<tstring, 1>();
-      tensor_data(index) = std::string(cell.value());
-    } break;
-    case DT_BOOL: {
-      auto tensor_data = tensor.tensor<bool, 1>();
-      auto maybe_parsed_data = BytesToBoolWin(cell);
-      if (!maybe_parsed_data.ok()) {
-        return maybe_parsed_data.status();
-      }
-      tensor_data(index) = maybe_parsed_data.ValueOrDie();
-    } break;
-    case DT_INT32: {
-      auto tensor_data = tensor.tensor<int32_t, 1>();
-      auto maybe_parsed_data = BytesToInt32Win(cell);
-      if (!maybe_parsed_data.ok()) {
-        return maybe_parsed_data.status();
-      }
-      tensor_data(index) = maybe_parsed_data.ValueOrDie();
-    } break;
-    case DT_INT64: {
-      auto tensor_data = tensor.tensor<int64_t, 1>();
-      auto maybe_parsed_data = BytesToInt64Win(cell);
-      if (!maybe_parsed_data.ok()) {
-        return maybe_parsed_data.status();
-      }
-      tensor_data(index) = maybe_parsed_data.ValueOrDie();
-    } break;
-    case DT_FLOAT: {
-      auto tensor_data = tensor.tensor<float, 1>();
-      auto maybe_parsed_data = BytesToFloatWin(cell);
-      if (!maybe_parsed_data.ok()) {
-        return maybe_parsed_data.status();
-      }
-      tensor_data(index) = maybe_parsed_data.ValueOrDie();
-    } break;
-    case DT_DOUBLE: {
-      auto tensor_data = tensor.tensor<double, 1>();
-      auto maybe_parsed_data = BytesToDoubleWin(cell);
-      if (!maybe_parsed_data.ok()) {
-        return maybe_parsed_data.status();
-      }
-      tensor_data(index) = maybe_parsed_data.ValueOrDie();
-    } break;
-    default:
-      return errors::Unimplemented("Data type not supported.");
-  }
-  return Status::OK();
-}
 
 }  // namespace io
 }  // namespace tensorflow

@@ -23,30 +23,13 @@ limitations under the License.
 namespace tensorflow {
 namespace io {
 
-class Serializer {
- public:
   // Bigtable only stores values as byte buffers - except for int64 the server
   // side does not have any notion of types. Tensorflow, needs to store shorter
   // integers, floats, doubles, so we needed to decide on how. We chose to
   // follow what HBase does, since there is a path for migrating from HBase to
   // Bigtable. XDR seems to match what HBase does.
-  virtual Status PutCellValueInTensor(
-      Tensor& tensor, size_t index, DataType cell_type,
-      google::cloud::bigtable::Cell const& cell) const = 0;
-  ;
-};
-
-class ReinterpretSerializer : public Serializer {
   Status PutCellValueInTensor(Tensor& tensor, size_t index, DataType cell_type,
-                              google::cloud::bigtable::Cell const& cell) const;
-};
-
-class XDRSerializer : public Serializer {
-  Status PutCellValueInTensor(Tensor& tensor, size_t index, DataType cell_type,
-                              google::cloud::bigtable::Cell const& cell) const;
-};
-
-std::unique_ptr<Serializer> GetSerializer();
+                              google::cloud::bigtable::Cell const& cell);
 
 }  // namespace io
 }  // namespace tensorflow

@@ -146,7 +146,6 @@ class Iterator : public DatasetIterator<Dataset> {
   explicit Iterator(const typename DatasetIterator<Dataset>::Params& params,
                     const std::vector<std::string>& columns)
       : DatasetIterator<Dataset>(params),
-        serializer_(io::GetSerializer()),
         columns_(ColumnsToFamiliesAndQualifiers(columns)),
         reader_(this->dataset()->CreateTable().ReadRows(
             this->dataset()->row_set(),
@@ -186,7 +185,7 @@ class Iterator : public DatasetIterator<Dataset> {
       const auto column_idx = column_to_idx_.find(key);
       if (column_idx != column_to_idx_.end()) {
         VLOG(1) << "getting column:" << column_idx->second;
-        TF_RETURN_IF_ERROR(serializer_->PutCellValueInTensor(
+        TF_RETURN_IF_ERROR(io::PutCellValueInTensor(
             res, column_idx->second, dtype, cell));
       } else {
         LOG(ERROR) << "column " << cell.family_name() << ":"
@@ -268,7 +267,6 @@ class Iterator : public DatasetIterator<Dataset> {
   }
 
   mutex mu_;
-  std::unique_ptr<io::Serializer> serializer_ GUARDED_BY(mu_);
   const std::vector<std::pair<std::string, std::string>> columns_;
   cbt::RowReader reader_ GUARDED_BY(mu_);
   cbt::v1::internal::RowReaderIterator it_ GUARDED_BY(mu_);
