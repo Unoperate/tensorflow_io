@@ -25,7 +25,7 @@ namespace tensorflow {
 namespace io {
 namespace {
 
-#ifdef __linux__
+#ifdef _WIN32
 
 #include <winsock.h>
 
