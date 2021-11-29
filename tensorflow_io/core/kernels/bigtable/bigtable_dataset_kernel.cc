@@ -185,8 +185,8 @@ class Iterator : public DatasetIterator<Dataset> {
       const auto column_idx = column_to_idx_.find(key);
       if (column_idx != column_to_idx_.end()) {
         VLOG(1) << "getting column:" << column_idx->second;
-        TF_RETURN_IF_ERROR(
-            serializer_.PutCellValueInTensor(res, column_idx->second, dtype, cell));
+        TF_RETURN_IF_ERROR(serializer_.PutCellValueInTensor(
+            res, column_idx->second, dtype, cell));
       } else {
         LOG(ERROR) << "column " << cell.family_name() << ":"
                    << cell.column_qualifier()

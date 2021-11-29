@@ -34,23 +34,79 @@ USE_XDR_ENV_VAR_NAME = "TFIO_DONT_USE_XDR"
 def check_values(test_case, values, table, type_name, tf_dtype):
     for i, r in enumerate(
         table.read_rows(
-            ["fam1:" +type_name],
+            ["fam1:" + type_name],
             row_set=row_set.from_rows_or_ranges(row_range.infinite()),
-            output_type=tf_dtype
+            output_type=tf_dtype,
         )
     ):
         test_case.assertEqual(values[i].numpy(), r.numpy()[0])
+
 
 class BigtableReadTest(test.TestCase):
     def setUp(self):
         self.emulator = BigtableEmulator()
         self.data = {
-            'values': [i*10/7 for i in range(10)],
-            'float': [b'\x00\x00\x00\x00', b'?\xb6\xdbn', b'@6\xdbn', b'@\x89$\x92', b'@\xb6\xdbn', b'@\xe4\x92I', b'A\t$\x92', b'A \x00\x00', b'A6\xdbn', b'AM\xb6\xdb'],
-            'double': [b'\x00\x00\x00\x00\x00\x00\x00\x00', b'?\xf6\xdbm\xb6\xdbm\xb7', b'@\x06\xdbm\xb6\xdbm\xb7', b'@\x11$\x92I$\x92I', b'@\x16\xdbm\xb6\xdbm\xb7', b'@\x1c\x92I$\x92I%', b'@!$\x92I$\x92I', b'@$\x00\x00\x00\x00\x00\x00', b'@&\xdbm\xb6\xdbm\xb7', b'@)\xb6\xdbm\xb6\xdbn'],
-            'int32': [b'\x00\x00\x00\x00', b'\x00\x00\x00\x01', b'\x00\x00\x00\x02', b'\x00\x00\x00\x04', b'\x00\x00\x00\x05', b'\x00\x00\x00\x07', b'\x00\x00\x00\x08', b'\x00\x00\x00\n', b'\x00\x00\x00\x0b', b'\x00\x00\x00\x0c'],
-            'int64': [b'\x00\x00\x00\x00\x00\x00\x00\x00', b'\x00\x00\x00\x00\x00\x00\x00\x01', b'\x00\x00\x00\x00\x00\x00\x00\x02', b'\x00\x00\x00\x00\x00\x00\x00\x04', b'\x00\x00\x00\x00\x00\x00\x00\x05', b'\x00\x00\x00\x00\x00\x00\x00\x07', b'\x00\x00\x00\x00\x00\x00\x00\x08', b'\x00\x00\x00\x00\x00\x00\x00\n', b'\x00\x00\x00\x00\x00\x00\x00\x0b', b'\x00\x00\x00\x00\x00\x00\x00\x0c'],
-            'bool': [b'\x00\x00\x00\x00', b'\x00\x00\x00\x01', b'\x00\x00\x00\x01', b'\x00\x00\x00\x01', b'\x00\x00\x00\x01', b'\x00\x00\x00\x01', b'\x00\x00\x00\x01', b'\x00\x00\x00\x01', b'\x00\x00\x00\x01', b'\x00\x00\x00\x01'],
+            "values": [i * 10 / 7 for i in range(10)],
+            "float": [
+                b"\x00\x00\x00\x00",
+                b"?\xb6\xdbn",
+                b"@6\xdbn",
+                b"@\x89$\x92",
+                b"@\xb6\xdbn",
+                b"@\xe4\x92I",
+                b"A\t$\x92",
+                b"A \x00\x00",
+                b"A6\xdbn",
+                b"AM\xb6\xdb",
+            ],
+            "double": [
+                b"\x00\x00\x00\x00\x00\x00\x00\x00",
+                b"?\xf6\xdbm\xb6\xdbm\xb7",
+                b"@\x06\xdbm\xb6\xdbm\xb7",
+                b"@\x11$\x92I$\x92I",
+                b"@\x16\xdbm\xb6\xdbm\xb7",
+                b"@\x1c\x92I$\x92I%",
+                b"@!$\x92I$\x92I",
+                b"@$\x00\x00\x00\x00\x00\x00",
+                b"@&\xdbm\xb6\xdbm\xb7",
+                b"@)\xb6\xdbm\xb6\xdbn",
+            ],
+            "int32": [
+                b"\x00\x00\x00\x00",
+                b"\x00\x00\x00\x01",
+                b"\x00\x00\x00\x02",
+                b"\x00\x00\x00\x04",
+                b"\x00\x00\x00\x05",
+                b"\x00\x00\x00\x07",
+                b"\x00\x00\x00\x08",
+                b"\x00\x00\x00\n",
+                b"\x00\x00\x00\x0b",
+                b"\x00\x00\x00\x0c",
+            ],
+            "int64": [
+                b"\x00\x00\x00\x00\x00\x00\x00\x00",
+                b"\x00\x00\x00\x00\x00\x00\x00\x01",
+                b"\x00\x00\x00\x00\x00\x00\x00\x02",
+                b"\x00\x00\x00\x00\x00\x00\x00\x04",
+                b"\x00\x00\x00\x00\x00\x00\x00\x05",
+                b"\x00\x00\x00\x00\x00\x00\x00\x07",
+                b"\x00\x00\x00\x00\x00\x00\x00\x08",
+                b"\x00\x00\x00\x00\x00\x00\x00\n",
+                b"\x00\x00\x00\x00\x00\x00\x00\x0b",
+                b"\x00\x00\x00\x00\x00\x00\x00\x0c",
+            ],
+            "bool": [
+                b"\x00\x00\x00\x00",
+                b"\x00\x00\x00\x01",
+                b"\x00\x00\x00\x01",
+                b"\x00\x00\x00\x01",
+                b"\x00\x00\x00\x01",
+                b"\x00\x00\x00\x01",
+                b"\x00\x00\x00\x01",
+                b"\x00\x00\x00\x01",
+                b"\x00\x00\x00\x01",
+                b"\x00\x00\x00\x01",
+            ],
         }
 
         os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
@@ -58,20 +114,19 @@ class BigtableReadTest(test.TestCase):
             "fake_project", "fake_instance", "test-table", ["fam1"]
         )
 
-        client = Client(project='fake_project',
-                        credentials=AnonymousCredentials(),
-                        admin=True)
+        client = Client(
+            project="fake_project", credentials=AnonymousCredentials(), admin=True
+        )
         table = client.instance("fake_instance").table("test-table")
 
-        for type_name in ['float', 'double', 'int32', 'int64', 'bool']:
+        for type_name in ["float", "double", "int32", "int64", "bool"]:
             rows = []
-            for i,value in enumerate(self.data[type_name]):
-                row_key = "row" + str(i).rjust(3,"0")
+            for i, value in enumerate(self.data[type_name]):
+                row_key = "row" + str(i).rjust(3, "0")
                 row = table.direct_row(row_key)
-                row.set_cell("fam1",
-                            type_name,
-                            value,
-                            timestamp=datetime.datetime.utcnow())
+                row.set_cell(
+                    "fam1", type_name, value, timestamp=datetime.datetime.utcnow()
+                )
                 rows.append(row)
             table.mutate_rows(rows)
 
@@ -82,18 +137,17 @@ class BigtableReadTest(test.TestCase):
         if USE_XDR_ENV_VAR_NAME in os.environ:
             del os.environ[USE_XDR_ENV_VAR_NAME]
 
-        values = tf.constant(self.data['values'], dtype=tf.float32)
+        values = tf.constant(self.data["values"], dtype=tf.float32)
 
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         check_values(self, values, table, "float", tf.float32)
 
-
     def test_float_win(self):
-        os.environ[USE_XDR_ENV_VAR_NAME] = '1'
+        os.environ[USE_XDR_ENV_VAR_NAME] = "1"
 
-        values = tf.constant(self.data['values'], dtype=tf.float32)
+        values = tf.constant(self.data["values"], dtype=tf.float32)
 
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
@@ -104,39 +158,37 @@ class BigtableReadTest(test.TestCase):
         if USE_XDR_ENV_VAR_NAME in os.environ:
             del os.environ[USE_XDR_ENV_VAR_NAME]
 
-        values = tf.constant(self.data['values'], dtype=tf.float64)
+        values = tf.constant(self.data["values"], dtype=tf.float64)
 
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         check_values(self, values, table, "double", tf.float64)
-    
 
     def test_double_win(self):
-        os.environ[USE_XDR_ENV_VAR_NAME] = '1'
-        values = tf.constant(self.data['values'], dtype=tf.float64)
+        os.environ[USE_XDR_ENV_VAR_NAME] = "1"
+        values = tf.constant(self.data["values"], dtype=tf.float64)
 
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         check_values(self, values, table, "double", tf.float64)
 
-    
     def test_int64_xdr(self):
         if USE_XDR_ENV_VAR_NAME in os.environ:
             del os.environ[USE_XDR_ENV_VAR_NAME]
 
-        values = tf.cast(tf.constant(self.data['values']), dtype=tf.int64)
+        values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int64)
 
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         check_values(self, values, table, "int64", tf.int64)
-            
-    def test_int64_win(self):
-        os.environ[USE_XDR_ENV_VAR_NAME] = '1'
 
-        values = tf.cast(tf.constant(self.data['values']), dtype=tf.int64)
+    def test_int64_win(self):
+        os.environ[USE_XDR_ENV_VAR_NAME] = "1"
+
+        values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int64)
 
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
@@ -147,40 +199,38 @@ class BigtableReadTest(test.TestCase):
         if USE_XDR_ENV_VAR_NAME in os.environ:
             del os.environ[USE_XDR_ENV_VAR_NAME]
 
-        values = tf.cast(tf.constant(self.data['values']), dtype=tf.int32)
+        values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int32)
 
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         check_values(self, values, table, "int32", tf.int32)
-            
+
     def test_int32_win(self):
-        os.environ[USE_XDR_ENV_VAR_NAME] = '1'
+        os.environ[USE_XDR_ENV_VAR_NAME] = "1"
 
-        values = tf.cast(tf.constant(self.data['values']), dtype=tf.int32)
+        values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int32)
 
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         check_values(self, values, table, "int32", tf.int32)
-
 
     def test_bool_xdr(self):
         if USE_XDR_ENV_VAR_NAME in os.environ:
             del os.environ[USE_XDR_ENV_VAR_NAME]
 
-        values = tf.cast(tf.constant(self.data['values']), dtype=tf.bool)
+        values = tf.cast(tf.constant(self.data["values"]), dtype=tf.bool)
 
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         check_values(self, values, table, "bool", tf.bool)
 
-
     def test_bool_win(self):
-        os.environ[USE_XDR_ENV_VAR_NAME] = '1'
+        os.environ[USE_XDR_ENV_VAR_NAME] = "1"
 
-        values = tf.cast(tf.constant(self.data['values']), dtype=tf.bool)
+        values = tf.cast(tf.constant(self.data["values"]), dtype=tf.bool)
 
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
