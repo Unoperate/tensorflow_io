@@ -111,10 +111,10 @@ http_archive(
 # Note com_google_googleapis is placed earlier as we need to adjust switched_rules_by_language option
 # Note we have to change one word in the field_behavior.proto so it compiles on WINDOWS
 # for more infor please refer to https://github.com/protocolbuffers/protobuf/issues/7076
-# Because of a bug in protocol buffers (protocolbuffers/protobuf#7076), new versions of this project 
-# fail to compile on Windows. The problem hinges on OPTIONAL being defined as an empty string under 
-# Windows. This makes the preprocessor remove every mention of OPTIONAL from the code, which causes 
-# compilation failures. This temporary workaround renames the name of the protobuf value OPTIONAL to 
+# Because of a bug in protocol buffers (protocolbuffers/protobuf#7076), new versions of this project
+# fail to compile on Windows. The problem hinges on OPTIONAL being defined as an empty string under
+# Windows. This makes the preprocessor remove every mention of OPTIONAL from the code, which causes
+# compilation failures. This temporary workaround renames the name of the protobuf value OPTIONAL to
 # OPIONAL. This should be safe as it does not affect the generated protobufs.
 http_archive(
     name = "com_google_googleapis",

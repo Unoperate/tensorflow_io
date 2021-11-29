@@ -29,7 +29,6 @@ namespace {
 
 #include <winsock.h>
 
-
 inline StatusOr<int32_t> BytesToInt32(const cbt::Cell& cell) {
   std::string const& bytes = cell.value();
   union {
@@ -89,7 +88,6 @@ inline StatusOr<double> BytesToDouble(const cbt::Cell& cell) {
   u.int_rep = *int_rep;
   return u.res;
 }
-
 
 #else  // _WIN32
 
@@ -154,10 +152,8 @@ inline StatusOr<bool_t> BytesToBool(const cbt::Cell& cell) {
 
 }  // namespace
 
-
-Status PutCellValueInTensor(
-    Tensor& tensor, size_t index, DataType cell_type,
-    google::cloud::bigtable::Cell const& cell) {
+Status PutCellValueInTensor(Tensor& tensor, size_t index, DataType cell_type,
+                            google::cloud::bigtable::Cell const& cell) {
   switch (cell_type) {
     case DT_STRING: {
       auto tensor_data = tensor.tensor<tstring, 1>();
@@ -208,7 +204,6 @@ Status PutCellValueInTensor(
   }
   return Status::OK();
 }
-
 
 }  // namespace io
 }  // namespace tensorflow
