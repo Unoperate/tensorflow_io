@@ -25,7 +25,7 @@ namespace tensorflow {
 namespace io {
 namespace {
 
-#ifdef _WIN32
+#ifdef __linux__
 
 #include <winsock.h>
 
@@ -53,7 +53,7 @@ inline StatusOr<int64_t> BytesToInt64(const cbt::Cell& cell) {
 inline StatusOr<bool_t> BytesToBool(const cbt::Cell& cell) {
   auto const int_rep = BytesToInt32(cell);
   if (!int_rep.ok()) {
-    return int_rep;
+    return int_rep.status();
   }
   union {
     bool_t res;
