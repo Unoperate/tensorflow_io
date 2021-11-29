@@ -111,19 +111,6 @@ inline StatusOr<bool_t> BytesToBool(const cbt::Cell & cell) {
 
 #endif  // _WIN32
 
-inline StatusOr<bool_t> BytesToBoolWin(const cbt::Cell & cell) {
-  std::string const& bytes = cell.value();
-  union {
-    char byte;
-    bool res;
-  } u;
-  if (bytes.size() != 1U) {
-    return errors::InvalidArgument("Invalid bool representation.");
-  }
-  u.byte = bytes[0];
-  return u.res;
-}
-
 inline StatusOr<int32_t> BytesToInt32Win(const cbt::Cell & cell) {
   std::string const& bytes = cell.value();
   union {
@@ -143,6 +130,19 @@ inline StatusOr<int64_t> BytesToInt64Win(const cbt::Cell & cell) {
       return errors::InvalidArgument("Invalid int32 representation.");
   }
   return maybe_value.value();
+}
+
+inline StatusOr<bool_t> BytesToBoolWin(const cbt::Cell & cell) {
+  auto const int_rep = BytesToInt32Win(cell);
+  if (!int_rep.ok()) {
+    return int_rep;
+  }
+  union {
+    bool res;
+    int32_t int_rep;
+  } u;
+  u.int_rep = *int_rep;
+  return u.res;
 }
 
 inline StatusOr<float> BytesToFloatWin(const cbt::Cell & cell) {
