@@ -129,15 +129,10 @@ inline StatusOr<int32_t> BytesToInt32(const cbt::Cell& cell) {
 
 inline StatusOr<bool> BytesToBool(const cbt::Cell& cell) {
   std::string const& bytes = cell.value();
-  union {
-    char bytes[1];
-    int8_t res;
-  } u;
   if (bytes.size() != 1U) {
     return errors::InvalidArgument("Invalid bool representation.");
   }
-  memcpy(u.bytes, bytes.data(), 1);
-  return u.res != 0;
+  return (*bytes.data()) != 0;
 }
 
 }  // namespace
