@@ -86,6 +86,7 @@ inline StatusOr<double> BytesToDouble(const cbt::Cell& cell) {
 
 #else  // _WIN32
 
+#include "rpc/types.h"
 #include "rpc/xdr.h"
 
 inline StatusOr<float> BytesToFloat(const cbt::Cell& cell) {
