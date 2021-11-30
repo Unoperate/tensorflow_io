@@ -53,7 +53,7 @@ inline StatusOr<int64_t> BytesToInt64(const cbt::Cell& cell) {
 inline StatusOr<bool> BytesToBool(const cbt::Cell& cell) {
   auto const int_rep = BytesToInt32(cell);
   if (!int_rep.ok()) {
-    return int_rep.status();
+    return int_rep;
   }
   return static_cast<bool>(int_rep.ValueOrDie());
 }
