@@ -55,7 +55,7 @@ inline StatusOr<bool> BytesToBool(const cbt::Cell& cell) {
   if (!int_rep.ok()) {
     return int_rep.status();
   }
-  return static_cast<bool>(v.ValueOrDie());
+  return static_cast<bool>(int_rep.ValueOrDie());
 }
 
 inline StatusOr<float> BytesToFloat(const cbt::Cell& cell) {
