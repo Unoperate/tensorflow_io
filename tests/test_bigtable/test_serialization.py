@@ -94,16 +94,16 @@ class BigtableReadTest(test.TestCase):
                 b"\x00\x00\x00\x00\x00\x00\x00\x0c",
             ],
             "bool": [
-                b'\x00',
-                b'\xff',
-                b'\xff',
-                b'\xff',
-                b'\xff',
-                b'\xff',
-                b'\xff',
-                b'\xff',
-                b'\xff',
-                b'\xff'
+                b"\x00",
+                b"\xff",
+                b"\xff",
+                b"\xff",
+                b"\xff",
+                b"\xff",
+                b"\xff",
+                b"\xff",
+                b"\xff",
+                b"\xff",
             ],
         }
 
