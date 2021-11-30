@@ -50,19 +50,6 @@ inline StatusOr<int64_t> BytesToInt64(const cbt::Cell& cell) {
   return maybe_value.value();
 }
 
-inline StatusOr<bool> BytesToBool(const cbt::Cell& cell) {
-  std::string const& bytes = cell.value();
-  union {
-    char bytes[1];
-    int8_t res;
-  } u;
-  if (bytes.size() != 1U) {
-    return errors::InvalidArgument("Invalid bool representation.");
-  }
-  memcpy(u.bytes, bytes.data(), 1);
-  return u.res != 0;
-}
-
 inline StatusOr<float> BytesToFloat(const cbt::Cell& cell) {
   auto const int_rep = BytesToInt32(cell);
   if (!int_rep.ok()) {
@@ -138,18 +125,20 @@ inline StatusOr<int32_t> BytesToInt32(const cbt::Cell& cell) {
   return v;
 }
 
-inline StatusOr<bool> BytesToBool(const cbt::Cell& cell) {
-  std::string const& s = cell.value();
-  int8_t v;
-  XDR xdrs;
-  xdrmem_create(&xdrs, const_cast<char*>(s.data()), sizeof(v), XDR_DECODE);
-  if (!xdr_int8_t(&xdrs, &v)) {
-    return errors::InvalidArgument("Error reading bool from byte array.");
-  }
-  return v != 0;
-}
-
 #endif  // _WIN32
+
+inline StatusOr<bool> BytesToBool(const cbt::Cell& cell) {
+  std::string const& bytes = cell.value();
+  union {
+    char bytes[1];
+    int8_t res;
+  } u;
+  if (bytes.size() != 1U) {
+    return errors::InvalidArgument("Invalid bool representation.");
+  }
+  memcpy(u.bytes, bytes.data(), 1);
+  return u.res != 0;
+}
 
 }  // namespace
 
