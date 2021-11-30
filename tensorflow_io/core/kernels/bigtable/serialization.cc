@@ -50,17 +50,12 @@ inline StatusOr<int64_t> BytesToInt64(const cbt::Cell& cell) {
   return maybe_value.value();
 }
 
-inline StatusOr<bool_t> BytesToBool(const cbt::Cell& cell) {
+inline StatusOr<bool> BytesToBool(const cbt::Cell& cell) {
   auto const int_rep = BytesToInt32(cell);
   if (!int_rep.ok()) {
     return int_rep.status();
   }
-  union {
-    bool_t res;
-    int32_t int_rep;
-  } u;
-  u.int_rep = *int_rep;
-  return u.res;
+  return std::static_cast<bool>(v.ValueOrDie());
 }
 
 inline StatusOr<float> BytesToFloat(const cbt::Cell& cell) {
