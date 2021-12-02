@@ -29,18 +29,20 @@ from google.cloud.bigtable import Client
 import datetime
 
 
-def check_values(test_case, values, table, type_name, tf_dtype):
-    for i, r in enumerate(
-        table.read_rows(
-            ["fam1:" + type_name],
-            row_set=row_set.from_rows_or_ranges(row_range.infinite()),
-            output_type=tf_dtype,
-        )
-    ):
-        test_case.assertEqual(values[i].numpy(), r.numpy()[0])
-
-
 class BigtableReadTest(test.TestCase):
+    def check_values(self, values, table, type_name, tf_dtype):
+        for i, r in enumerate(
+            table.read_rows(
+                ["fam1:" + type_name],
+                row_set=row_set.from_rows_or_ranges(row_range.infinite()),
+                output_type=tf_dtype,
+            )
+        ):
+            if tf_dtype in [tf.float64, tf.float32]:
+                self.assertAlmostEqual(values[i].numpy(), r.numpy()[0])
+            else:
+                self.assertEqual(values[i].numpy(), r.numpy()[0])
+
     def setUp(self):
         self.emulator = BigtableEmulator()
         self.data = {
@@ -137,7 +139,7 @@ class BigtableReadTest(test.TestCase):
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
-        check_values(self, values, table, "float", tf.float32)
+        self.check_values(values, table, "float", tf.float32)
 
     def test_double_xdr(self):
         values = tf.constant(self.data["values"], dtype=tf.float64)
@@ -145,7 +147,7 @@ class BigtableReadTest(test.TestCase):
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
-        check_values(self, values, table, "double", tf.float64)
+        self.check_values(values, table, "double", tf.float64)
 
     def test_int64_xdr(self):
         values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int64)
@@ -153,7 +155,7 @@ class BigtableReadTest(test.TestCase):
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
-        check_values(self, values, table, "int64", tf.int64)
+        self.check_values(values, table, "int64", tf.int64)
 
     def test_int32_xdr(self):
         values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int32)
@@ -161,7 +163,7 @@ class BigtableReadTest(test.TestCase):
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
-        check_values(self, values, table, "int32", tf.int32)
+        self.check_values(values, table, "int32", tf.int32)
 
     def test_bool_xdr(self):
         values = tf.cast(tf.constant(self.data["values"]), dtype=tf.bool)
@@ -169,4 +171,4 @@ class BigtableReadTest(test.TestCase):
         client = BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
-        check_values(self, values, table, "bool", tf.bool)
+        self.check_values(values, table, "bool", tf.bool)

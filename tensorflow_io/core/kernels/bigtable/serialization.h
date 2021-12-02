@@ -23,7 +23,7 @@ limitations under the License.
 namespace tensorflow {
 namespace io {
 
-// Bigtable only stores values as byte buffers - except for int64 the server
+// Bigtable only stores byte buffers as values - except for int64 the server
 // side does not have any notion of types. Tensorflow, needs to store shorter
 // integers, floats, doubles, so we needed to decide on how. We chose to
 // follow what HBase does, since there is a path for migrating from HBase to
