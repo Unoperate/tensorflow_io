@@ -24,6 +24,7 @@ from tensorflow_io.python.api import image
 from tensorflow_io.python.api import audio
 from tensorflow_io.python.api import version
 from tensorflow_io.python.api import experimental
+from tensorflow_io.python.api import bigtable
 
 if os.environ.get("GENERATING_TF_DOCS", ""):
     # Mark these as public api for /tools/docs/build_docs.py
