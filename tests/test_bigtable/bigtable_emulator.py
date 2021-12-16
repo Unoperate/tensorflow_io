@@ -26,6 +26,8 @@ import re
 import tensorflow as tf
 from threading import Thread
 from typing import List
+from google.auth.credentials import AnonymousCredentials
+from google.cloud.bigtable import Client
 
 CBT_EMULATOR_SEARCH_PATHS = [
     "/usr/lib/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
@@ -122,27 +124,28 @@ class BigtableEmulator:
         instance_id,
         table_id,
         tensor: tf.Tensor,
-        rows: List[str],
+        row_keys: List[str],
         columns: List[str],
     ):
         assert len(tensor.shape) == 2
-        assert len(rows) == tensor.shape[0]
+        assert len(row_keys) == tensor.shape[0]
         assert len(columns) == tensor.shape[1]
-        cli_path = _get_cbt_cli_path()
-        for i, row in enumerate(tensor):
-            for j, value in enumerate(row):
-                cmd = [
-                    cli_path,
-                    "-project",
-                    project_id,
-                    "-instance",
-                    instance_id,
-                    "set",
-                    table_id,
-                    rows[i],
-                    f"{columns[j]}={value.numpy().decode()}",
-                ]
-                subprocess.check_output(cmd)
+
+        os.environ["BIGTABLE_EMULATOR_HOST"] = self.get_addr()
+        client = Client(
+            project=project_id, credentials=AnonymousCredentials(), admin=True
+        )
+        table = client.instance(instance_id).table(table_id)
+
+        mutations = []
+        for i, tensor_row in enumerate(tensor):
+            for j, value in enumerate(tensor_row):
+                row = table.direct_row(row_keys[i])
+                fam, col = columns[j].split(":")
+                row.set_cell(fam, col, value.numpy().decode())
+                mutations.append(row)
+        table.mutate_rows(mutations)
+        
 
     def stop(self):
         self._emulator.terminate()
