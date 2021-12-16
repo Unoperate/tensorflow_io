@@ -145,7 +145,6 @@ class BigtableEmulator:
                 row.set_cell(fam, col, value.numpy().decode())
                 mutations.append(row)
         table.mutate_rows(mutations)
-        
 
     def stop(self):
         self._emulator.terminate()
