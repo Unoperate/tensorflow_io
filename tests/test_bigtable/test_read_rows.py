@@ -19,9 +19,7 @@
 
 import os
 from .bigtable_emulator import BigtableEmulator
-from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
-import tensorflow_io.python.ops.bigtable.bigtable_row_range as row_range
-import tensorflow_io.python.ops.bigtable.bigtable_row_set as row_set
+import tensorflow_io as tfio
 import tensorflow as tf
 from tensorflow import test
 
@@ -43,7 +41,7 @@ class BigtableReadTest(test.TestCase):
 
         ten = tf.constant(values)
 
-        client = BigtableClient("fake_project", "fake_instance")
+        client = tfio.bigtable.BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         self.emulator.write_tensor(
@@ -58,7 +56,7 @@ class BigtableReadTest(test.TestCase):
         for i, r in enumerate(
             table.read_rows(
                 ["fam1:col1", "fam2:col2"],
-                row_set=row_set.from_rows_or_ranges(row_range.empty()),
+                row_set=tfio.bigtable.row_set.from_rows_or_ranges(tfio.bigtable.row_range.empty()),
             )
         ):
             for j, c in enumerate(r):
@@ -74,7 +72,7 @@ class BigtableReadTest(test.TestCase):
 
         ten = tf.constant(values)
 
-        client = BigtableClient("fake_project", "fake_instance")
+        client = tfio.bigtable.BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         self.emulator.write_tensor(
@@ -86,7 +84,7 @@ class BigtableReadTest(test.TestCase):
             ["fam1:col1", "fam2:col2"],
         )
 
-        row_s = row_set.from_rows_or_ranges(row_range.closed_range("row000", "row009"))
+        row_s = tfio.bigtable.row_set.from_rows_or_ranges(tfio.bigtable.row_range.closed_range("row000", "row009"))
 
         read_rows = [
             r for r in table.read_rows(["fam1:col1", "fam2:col2"], row_set=row_s)

@@ -19,9 +19,7 @@
 
 import os
 from .bigtable_emulator import BigtableEmulator
-from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
-import tensorflow_io.python.ops.bigtable.bigtable_row_range as row_range
-import tensorflow_io.python.ops.bigtable.bigtable_row_set as row_set
+import tensorflow_io as tfio
 import tensorflow as tf
 from tensorflow import test
 from google.auth.credentials import AnonymousCredentials
@@ -34,7 +32,7 @@ class BigtableReadTest(test.TestCase):
         for i, r in enumerate(
             table.read_rows(
                 ["fam1:" + type_name],
-                row_set=row_set.from_rows_or_ranges(row_range.infinite()),
+                row_set=tfio.bigtable.tow_set.from_rows_or_ranges(tfio.bigtable.row_range.infinite()),
                 output_type=tf_dtype,
             )
         ):
@@ -136,7 +134,7 @@ class BigtableReadTest(test.TestCase):
     def test_float_xdr(self):
         values = tf.constant(self.data["values"], dtype=tf.float32)
 
-        client = BigtableClient("fake_project", "fake_instance")
+        client = tfio.bigtable.BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         self.check_values(values, table, "float", tf.float32)
@@ -144,7 +142,7 @@ class BigtableReadTest(test.TestCase):
     def test_double_xdr(self):
         values = tf.constant(self.data["values"], dtype=tf.float64)
 
-        client = BigtableClient("fake_project", "fake_instance")
+        client = tfio.bigtable.BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         self.check_values(values, table, "double", tf.float64)
@@ -152,7 +150,7 @@ class BigtableReadTest(test.TestCase):
     def test_int64_xdr(self):
         values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int64)
 
-        client = BigtableClient("fake_project", "fake_instance")
+        client = tfio.bigtable.BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         self.check_values(values, table, "int64", tf.int64)
@@ -160,7 +158,7 @@ class BigtableReadTest(test.TestCase):
     def test_int32_xdr(self):
         values = tf.cast(tf.constant(self.data["values"]), dtype=tf.int32)
 
-        client = BigtableClient("fake_project", "fake_instance")
+        client = tfio.bigtable.BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         self.check_values(values, table, "int32", tf.int32)
@@ -168,7 +166,7 @@ class BigtableReadTest(test.TestCase):
     def test_bool_xdr(self):
         values = tf.cast(tf.constant(self.data["values"]), dtype=tf.bool)
 
-        client = BigtableClient("fake_project", "fake_instance")
+        client = tfio.bigtable.BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         self.check_values(values, table, "bool", tf.bool)

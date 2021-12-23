@@ -21,9 +21,7 @@ import os
 from re import escape
 from .bigtable_emulator import BigtableEmulator
 from tensorflow_io.python.ops import core_ops
-from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
-import tensorflow_io.python.ops.bigtable.bigtable_row_range as row_range
-import tensorflow_io.python.ops.bigtable.bigtable_row_set as row_set
+import tensorflow_io as tfio
 import tensorflow as tf
 from tensorflow import test
 
@@ -50,7 +48,7 @@ class BigtableParallelReadTest(test.TestCase):
 
         ten = tf.constant(values)
 
-        client = BigtableClient("fake_project", "fake_instance")
+        client = tfio.bigtable.BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         self.emulator.write_tensor(
@@ -64,7 +62,7 @@ class BigtableParallelReadTest(test.TestCase):
 
         for r in table.parallel_read_rows(
             ["fam1:col1", "fam2:col2"],
-            row_set=row_set.from_rows_or_ranges(row_range.infinite()),
+            row_set=tfio.bigtable.row_set.from_rows_or_ranges(tfio.bigtable.row_range.infinite()),
         ):
             for c in r:
                 self.assertTrue(c.numpy().decode() in flat_values)
@@ -83,7 +81,7 @@ class BigtableParallelReadTest(test.TestCase):
 
         ten = tf.constant(values)
 
-        client = BigtableClient("fake_project", "fake_instance")
+        client = tfio.bigtable.BigtableClient("fake_project", "fake_instance")
         table = client.get_table("test-table")
 
         self.emulator.write_tensor(
@@ -97,7 +95,7 @@ class BigtableParallelReadTest(test.TestCase):
 
         dataset = table.parallel_read_rows(
             ["fam1:col1", "fam2:col2"],
-            row_set=row_set.from_rows_or_ranges(row_range.infinite()),
+            row_set=tfio.bigtable.row_set.from_rows_or_ranges(tfio.bigtable.row_range.infinite()),
             num_parallel_calls=2,
         )
         results = [[v.numpy().decode() for v in row] for row in dataset]
@@ -117,7 +115,7 @@ class BigtableParallelReadTest(test.TestCase):
 
         ten = tf.constant(values)
 
-        client = BigtableClient("fake_project", "fake_instance")
+        client = tfio.bigtable.BigtableClient("fake_project", "fake_instance")
 
         self.emulator.write_tensor(
             "fake_project",
@@ -128,7 +126,7 @@ class BigtableParallelReadTest(test.TestCase):
             ["fam1:col1", "fam2:col2"],
         )
 
-        rs = row_set.from_rows_or_ranges(row_range.infinite())
+        rs = tfio.bigtable.row_set.from_rows_or_ranges(tfio.bigtable.row_range.infinite())
 
         num_parallel_calls = 2
         samples = [
@@ -178,9 +176,9 @@ class BigtableParallelReadTest(test.TestCase):
             ["fam1", "fam2"],
         )
 
-        client = BigtableClient("fake_project", "fake_instance")
+        client = tfio.bigtable.BigtableClient("fake_project", "fake_instance")
 
-        rs = row_set.from_rows_or_ranges(row_range.empty())
+        rs = tfio.bigtable.row_set.from_rows_or_ranges(tfio.bigtable.row_range.empty())
 
         num_parallel_calls = 2
 
