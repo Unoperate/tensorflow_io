@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - tests/master_tests_from_scratch
   pull_request:
     branches:
       - master
