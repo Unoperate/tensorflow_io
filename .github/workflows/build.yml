@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - tests/refactor_tests
   pull_request:
     branches:
       - master
