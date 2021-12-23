@@ -16,9 +16,9 @@ from typing import List
 from tensorflow.python.data.ops import dataset_ops
 from tensorflow.python.framework import tensor_spec
 from tensorflow_io.python.ops import core_ops
-import tensorflow_io.python.ops.bigtable.bigtable_version_filters as filters
-import tensorflow_io.python.ops.bigtable.bigtable_row_set as bigtable_row_set
-import tensorflow_io.python.ops.bigtable.bigtable_row_range as bigtable_row_range
+import tensorflow_io.python.ops.bigtable_version_filters as filters
+import tensorflow_io.python.ops.bigtable_row_set as bigtable_row_set
+import tensorflow_io.python.ops.bigtable_row_range as bigtable_row_range
 from tensorflow.python.framework import dtypes
 import tensorflow as tf
 from tensorflow.python.data.ops import dataset_ops

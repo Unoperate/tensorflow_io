@@ -19,9 +19,9 @@
 
 import os
 from .bigtable_emulator import BigtableEmulator
-from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
-import tensorflow_io.python.ops.bigtable.bigtable_row_range as row_range
-import tensorflow_io.python.ops.bigtable.bigtable_row_set as row_set
+from tensorflow_io.python.ops.bigtable_dataset_ops import BigtableClient
+import tensorflow_io.python.ops.bigtable_row_range as row_range
+import tensorflow_io.python.ops.bigtable_row_set as row_set
 import tensorflow as tf
 from tensorflow import test
 from google.auth.credentials import AnonymousCredentials

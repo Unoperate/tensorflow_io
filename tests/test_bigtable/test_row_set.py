@@ -17,8 +17,8 @@
 # disable class docstring for tests
 # pylint: disable=C0115
 from tensorflow_io.python.ops import core_ops
-import tensorflow_io.python.ops.bigtable.bigtable_row_range as row_range
-import tensorflow_io.python.ops.bigtable.bigtable_row_set as row_set
+import tensorflow_io.python.ops.bigtable_row_range as row_range
+import tensorflow_io.python.ops.bigtable_row_set as row_set
 from tensorflow import test
 import tensorflow as tf
 

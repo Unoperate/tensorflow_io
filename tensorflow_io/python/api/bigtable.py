@@ -14,8 +14,8 @@
 # ==============================================================================
 """tensorflow_io.bigtable"""
 
-from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
-from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableTable
-import tensorflow_io.python.ops.bigtable.bigtable_version_filters as filters
-import tensorflow_io.python.ops.bigtable.bigtable_row_set as row_set
-import tensorflow_io.python.ops.bigtable.bigtable_row_range as row_range
+from tensorflow_io.python.ops.bigtable_dataset_ops import BigtableClient
+from tensorflow_io.python.ops.bigtable_dataset_ops import BigtableTable
+import tensorflow_io.python.ops.bigtable_version_filters as filters
+import tensorflow_io.python.ops.bigtable_row_set as row_set
+import tensorflow_io.python.ops.bigtable_row_range as row_range
