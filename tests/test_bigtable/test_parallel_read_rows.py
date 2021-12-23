@@ -134,10 +134,7 @@ class BigtableParallelReadTest(test.TestCase):
         samples = [
             s
             for s in core_ops.bigtable_split_row_set_evenly(
-                client._client_resource,
-                rs._impl,
-                "test-table",
-                num_parallel_calls,
+                client._client_resource, rs._impl, "test-table", num_parallel_calls,
             )
         ]
         self.assertEqual(len(samples), num_parallel_calls)
@@ -146,10 +143,7 @@ class BigtableParallelReadTest(test.TestCase):
         samples = [
             s
             for s in core_ops.bigtable_split_row_set_evenly(
-                client._client_resource,
-                rs._impl,
-                "test-table",
-                num_parallel_calls,
+                client._client_resource, rs._impl, "test-table", num_parallel_calls,
             )
         ]
 
@@ -161,10 +155,7 @@ class BigtableParallelReadTest(test.TestCase):
         samples = [
             s
             for s in core_ops.bigtable_split_row_set_evenly(
-                client._client_resource,
-                rs._impl,
-                "test-table",
-                num_parallel_calls,
+                client._client_resource, rs._impl, "test-table", num_parallel_calls,
             )
         ]
         self.assertEqual(len(samples), num_parallel_calls)
@@ -172,10 +163,7 @@ class BigtableParallelReadTest(test.TestCase):
     def test_split_empty(self):
         os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
         self.emulator.create_table(
-            "fake_project",
-            "fake_instance",
-            "test-table",
-            ["fam1", "fam2"],
+            "fake_project", "fake_instance", "test-table", ["fam1", "fam2"],
         )
 
         client = BigtableClient("fake_project", "fake_instance")
@@ -187,9 +175,6 @@ class BigtableParallelReadTest(test.TestCase):
         self.assertRaises(
             tf.errors.FailedPreconditionError,
             lambda: core_ops.bigtable_split_row_set_evenly(
-                client._client_resource,
-                rs._impl,
-                "test-table",
-                num_parallel_calls,
+                client._client_resource, rs._impl, "test-table", num_parallel_calls,
             ),
         )
