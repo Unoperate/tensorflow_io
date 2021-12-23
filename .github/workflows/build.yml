@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - kb/use_api_in_tests
   pull_request:
     branches:
       - master
