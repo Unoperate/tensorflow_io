@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - kb/base
+      - tests/revering_non_linting_changes
   pull_request:
     branches:
       - master
