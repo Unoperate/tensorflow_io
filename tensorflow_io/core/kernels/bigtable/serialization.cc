@@ -15,7 +15,6 @@ limitations under the License.
 */
 
 #include "tensorflow_io/core/kernels/bigtable/serialization.h"
-
 #include "rpc/xdr.h"
 #include "tensorflow/core/platform/errors.h"
 #include "tensorflow/core/platform/statusor.h"
@@ -73,8 +72,9 @@ inline StatusOr<bool_t> BytesToBool(std::string const& s) {
   return v;
 }
 
-Status PutCellValueInTensor(Tensor& tensor, size_t index, DataType cell_type,
-                            google::cloud::bigtable::Cell const& cell) {
+Status PutCellValueInTensor(Tensor& tensor, size_t index,
+                                   DataType cell_type,
+                                   google::cloud::bigtable::Cell const& cell) {
   switch (cell_type) {
     case DT_STRING: {
       auto tensor_data = tensor.tensor<tstring, 1>();
