@@ -86,7 +86,12 @@ def _extract_emulator_addr_from_output(emulator_output):
 
 class BigtableEmulator:
     def __init__(self):
+        print("starting BigtableEmulator")
         emulator_path = _get_cbt_emulator_path()
+
+
+        print("emulator path", emulator_path)
+
         self._emulator = subprocess.Popen(
             [emulator_path, "-port", "0"],
             stdout=subprocess.PIPE,
@@ -95,6 +100,9 @@ class BigtableEmulator:
         )
         out = self._emulator.stdout
         self._emulator_addr = _extract_emulator_addr_from_output(out)
+
+        print("emulator addr", self._emulator_addr)
+
         self._output_reading_thread = Thread(target=out.read)
         self._output_reading_thread.start()
 
@@ -164,7 +172,10 @@ class BigtableReadTest(test.TestCase):
         self.emulator.stop()
 
     def test_read(self):
+        print("test read started")
+        print("emulator running at ", self.emulator.get_addr())
         os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
+        print("create table")
         self.emulator.create_table(
             "fake_project", "fake_instance", "test-table", ["fam1", "fam2"]
         )
@@ -173,9 +184,13 @@ class BigtableReadTest(test.TestCase):
 
         ten = tf.constant(values)
 
+        print("create client")
+
         client = BigtableClient("fake_project", "fake_instance")
+        print("get table")
         table = client.get_table("test-table")
 
+        print("write tensor")
         self.emulator.write_tensor(
             "fake_project",
             "fake_instance",
@@ -184,6 +199,8 @@ class BigtableReadTest(test.TestCase):
             ["row" + str(i).rjust(3, "0") for i in range(20)],
             ["fam1:col1", "fam2:col2"],
         )
+
+        print("read rows")
 
         for i, r in enumerate(
             table.read_rows(
@@ -193,200 +210,3 @@ class BigtableReadTest(test.TestCase):
         ):
             for j, c in enumerate(r):
                 self.assertEqual(values[i][j], c.numpy().decode())
-
-    def test_read_row_set(self):
-        os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
-        self.emulator.create_table(
-            "fake_project", "fake_instance", "test-table", ["fam1", "fam2"]
-        )
-
-        values = [[f"[{i,j}]" for j in range(2)] for i in range(20)]
-
-        ten = tf.constant(values)
-
-        client = BigtableClient("fake_project", "fake_instance")
-        table = client.get_table("test-table")
-
-        self.emulator.write_tensor(
-            "fake_project",
-            "fake_instance",
-            "test-table",
-            ten,
-            ["row" + str(i).rjust(3, "0") for i in range(20)],
-            ["fam1:col1", "fam2:col2"],
-        )
-
-        row_s = row_set.from_rows_or_ranges(row_range.closed_range("row000", "row009"))
-
-        read_rows = [
-            r for r in table.read_rows(["fam1:col1", "fam2:col2"], row_set=row_s)
-        ]
-        self.assertEqual(len(read_rows), 10)
-
-
-
-class BigtableParallelReadTest(test.TestCase):
-    def setUp(self):
-        self.emulator = BigtableEmulator()
-
-    def tearDown(self):
-        self.emulator.stop()
-
-    def test_parallel_read(self):
-        os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
-        self.emulator.create_table(
-            "fake_project",
-            "fake_instance",
-            "test-table",
-            ["fam1", "fam2"],
-            splits=["row005", "row010", "row015"],
-        )
-
-        values = [[f"[{i,j}]" for j in range(2)] for i in range(20)]
-        flat_values = [value for row in values for value in row]
-
-        ten = tf.constant(values)
-
-        client = BigtableClient("fake_project", "fake_instance")
-        table = client.get_table("test-table")
-
-        self.emulator.write_tensor(
-            "fake_project",
-            "fake_instance",
-            "test-table",
-            ten,
-            ["row" + str(i).rjust(3, "0") for i in range(20)],
-            ["fam1:col1", "fam2:col2"],
-        )
-
-        for r in table.parallel_read_rows(
-            ["fam1:col1", "fam2:col2"],
-            row_set=row_set.from_rows_or_ranges(row_range.infinite()),
-        ):
-            for c in r:
-                self.assertTrue(c.numpy().decode() in flat_values)
-
-    def test_not_parallel_read(self):
-        os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
-        self.emulator.create_table(
-            "fake_project",
-            "fake_instance",
-            "test-table",
-            ["fam1", "fam2"],
-            splits=["row005", "row010", "row015"],
-        )
-
-        values = [[f"[{i,j}]" for j in range(2)] for i in range(20)]
-
-        ten = tf.constant(values)
-
-        client = BigtableClient("fake_project", "fake_instance")
-        table = client.get_table("test-table")
-
-        self.emulator.write_tensor(
-            "fake_project",
-            "fake_instance",
-            "test-table",
-            ten,
-            ["row" + str(i).rjust(3, "0") for i in range(20)],
-            ["fam1:col1", "fam2:col2"],
-        )
-
-        dataset = table.parallel_read_rows(
-            ["fam1:col1", "fam2:col2"],
-            row_set=row_set.from_rows_or_ranges(row_range.infinite()),
-            num_parallel_calls=2,
-        )
-        results = [[v.numpy().decode() for v in row] for row in dataset]
-        self.assertEqual(repr(sorted(values)), repr(sorted(results)))
-
-    def test_split_row_set(self):
-        os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
-        self.emulator.create_table(
-            "fake_project",
-            "fake_instance",
-            "test-table",
-            ["fam1", "fam2"],
-            splits=["row005", "row010", "row015", "row020", "row025", "row030"],
-        )
-
-        values = [[f"[{i,j}]" for j in range(2)] for i in range(40)]
-
-        ten = tf.constant(values)
-
-        client = BigtableClient("fake_project", "fake_instance")
-
-        self.emulator.write_tensor(
-            "fake_project",
-            "fake_instance",
-            "test-table",
-            ten,
-            ["row" + str(i).rjust(3, "0") for i in range(40)],
-            ["fam1:col1", "fam2:col2"],
-        )
-
-        rs = row_set.from_rows_or_ranges(row_range.infinite())
-
-        num_parallel_calls = 2
-        samples = [
-            s
-            for s in core_ops.bigtable_split_row_set_evenly(
-                client._client_resource,
-                rs._impl,
-                "test-table",
-                num_parallel_calls,
-            )
-        ]
-        self.assertEqual(len(samples), num_parallel_calls)
-
-        num_parallel_calls = 6
-        samples = [
-            s
-            for s in core_ops.bigtable_split_row_set_evenly(
-                client._client_resource,
-                rs._impl,
-                "test-table",
-                num_parallel_calls,
-            )
-        ]
-
-        # The emulator may return different samples each time, so we can't
-        # expect an exact number, but it must be no more than num_parallel_calls
-        self.assertLessEqual(len(samples), num_parallel_calls)
-
-        num_parallel_calls = 1
-        samples = [
-            s
-            for s in core_ops.bigtable_split_row_set_evenly(
-                client._client_resource,
-                rs._impl,
-                "test-table",
-                num_parallel_calls,
-            )
-        ]
-        self.assertEqual(len(samples), num_parallel_calls)
-
-    def test_split_empty(self):
-        os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
-        self.emulator.create_table(
-            "fake_project",
-            "fake_instance",
-            "test-table",
-            ["fam1", "fam2"],
-        )
-
-        client = BigtableClient("fake_project", "fake_instance")
-
-        rs = row_set.from_rows_or_ranges(row_range.empty())
-
-        num_parallel_calls = 2
-
-        self.assertRaises(
-            tf.errors.FailedPreconditionError,
-            lambda: core_ops.bigtable_split_row_set_evenly(
-                client._client_resource,
-                rs._impl,
-                "test-table",
-                num_parallel_calls,
-            ),
-        )
