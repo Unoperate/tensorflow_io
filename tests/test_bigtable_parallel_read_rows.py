@@ -39,6 +39,12 @@ class BigtableEmulator:
     def __init__(self, project_id="fake_project", instance_id="fake_instance"):
         print("starting BigtableEmulator")
 
+        if os.environ["BIGTABLE_EMULATOR_HOST"] != "127.0.0.1:8086":
+            print("#"*80 + "\nBIGTABLE_EMULATOR_HOST was set to:", os.environ["BIGTABLE_EMULATOR_HOST"])
+            print("#"*80)
+
+        print("bigtable env variable set to:",os.environ["BIGTABLE_EMULATOR_HOST"])
+        self._env_var = os.environ["BIGTABLE_EMULATOR_HOST"]
         os.environ["BIGTABLE_EMULATOR_HOST"] = "127.0.0.1:8086"
 
         self._client = Client(
@@ -91,6 +97,7 @@ class BigtableEmulator:
 
 
     def stop(self):
+        os.environ["BIGTABLE_EMULATOR_HOST"] = self._env_var
         self._client.close()
 
 
