@@ -39,16 +39,12 @@ class BigtableEmulator:
     def __init__(self, project_id="fake_project", instance_id="fake_instance"):
         print("starting BigtableEmulator")
 
-        self._emulator_addr = "localhost:8086"
+        os.environ["BIGTABLE_EMULATOR_HOST"] = "127.0.0.1:8086"
 
         self._client = Client(
             project=project_id, credentials=AnonymousCredentials(), admin=True
         )
         self._instance = self._client.instance(instance_id)
-
-
-    def get_addr(self):
-        return self._emulator_addr
 
     def create_table(
         self, table_id, column_families=["cf1"]
@@ -111,8 +107,6 @@ class BigtableReadTest(test.TestCase):
 
     def test_read(self):
         print("test read started")
-        print("emulator running at ", self.emulator.get_addr())
-        os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
         print("create table")
         self.emulator.create_table(
             "test_read", ["fam1", "fam2"]
