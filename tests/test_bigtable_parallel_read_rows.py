@@ -31,12 +31,15 @@ from threading import Thread
 from typing import List
 
 CBT_EMULATOR_SEARCH_PATHS = [
+    "/home/runner/work/tensorflow_io/tensorflow_io/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
+    "tensorflow_io/tensorflow_io/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
     "/usr/lib/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
     "/usr/local/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
     "cbtemulator",
 ]
 
 CBT_CLI_SEARCH_PATHS = [
+    "google-cloud-sdk/bin/cbt",
     "/usr/local/google-cloud-sdk/bin/cbt",
     "/usr/bin/cbt",
     "cbt",
