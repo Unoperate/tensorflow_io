@@ -37,6 +37,7 @@ google-cloud-sdk/install.sh -q
 google-cloud-sdk/bin/gcloud -q components install beta bigtable cbt
 google-cloud-sdk/bin/gcloud -q components install pubsub-emulator
 google-cloud-sdk/bin/gcloud -q components update beta
+find ./google-cloud-sdk -print
 google-cloud-sdk/bin/gcloud -q beta emulators pubsub start &
 google-cloud-sdk/bin/gcloud -q beta emulators bigtable start &
 exit 0
