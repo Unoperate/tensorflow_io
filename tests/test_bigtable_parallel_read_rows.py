@@ -98,7 +98,10 @@ class BigtableEmulator:
 
 
     def stop(self):
-        os.environ["BIGTABLE_EMULATOR_HOST"] = self._env_var
+        if self._env_var is not None:
+            os.environ["BIGTABLE_EMULATOR_HOST"] = self._env_var
+        else:
+            del os.environ["BIGTABLE_EMULATOR_HOST"]
         self._client.close()
 
 
