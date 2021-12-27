@@ -30,14 +30,6 @@ from tensorflow import test
 from threading import Thread
 from typing import List
 
-CBT_EMULATOR_SEARCH_PATHS = [
-    "/home/runner/work/tensorflow_io/tensorflow_io/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
-    "tensorflow_io/tensorflow_io/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
-    "/usr/lib/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
-    "/usr/local/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
-    "cbtemulator",
-]
-
 CBT_CLI_SEARCH_PATHS = [
     "google-cloud-sdk/bin/cbt",
     "/usr/local/google-cloud-sdk/bin/cbt",
@@ -45,7 +37,6 @@ CBT_CLI_SEARCH_PATHS = [
     "cbt",
 ]
 
-CBT_EMULATOR_PATH_ENV_VAR = "CBT_EMULATOR_PATH"
 CBT_CLI_PATH_ENV_VAR = "CBT_CLI_PATH"
 
 
@@ -64,50 +55,18 @@ def _get_cbt_binary_path(env_var_name, search_paths, description):
     raise OSError(f"Could not find {description}")
 
 
-def _get_cbt_emulator_path():
-    return _get_cbt_binary_path(
-        CBT_EMULATOR_PATH_ENV_VAR, CBT_EMULATOR_SEARCH_PATHS, "cbt emulator"
-    )
-
-
 def _get_cbt_cli_path():
     return _get_cbt_binary_path(CBT_CLI_PATH_ENV_VAR, CBT_CLI_SEARCH_PATHS, "cbt cli")
 
-
-def _extract_emulator_addr_from_output(emulator_output):
-    while True:
-        line = emulator_output.readline().decode()
-        if not line:
-            raise RuntimeError("CBT emulator stopped producing output")
-        if "running on" in line:
-            words = line.split()
-            for word in words:
-                if re.fullmatch("[a-z.0-9]+:[0-9]+", word):
-                    return word
-            raise RuntimeError(f"Failed to find CBT emulator in the line {line}")
 
 
 class BigtableEmulator:
     def __init__(self):
         print("starting BigtableEmulator")
-        emulator_path = _get_cbt_emulator_path()
 
-
-        print("emulator path", emulator_path)
-
-        self._emulator = subprocess.Popen(
-            [emulator_path, "-port", "0"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            bufsize=0,
-        )
-        out = self._emulator.stdout
-        self._emulator_addr = _extract_emulator_addr_from_output(out)
+        self._emulator_addr = "localhost:8086"
 
         print("emulator addr", self._emulator_addr)
-
-        self._output_reading_thread = Thread(target=out.read)
-        self._output_reading_thread.start()
 
     def get_addr(self):
         return self._emulator_addr
