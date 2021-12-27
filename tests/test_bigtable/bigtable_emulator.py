@@ -35,7 +35,7 @@ CBT_EMULATOR_SEARCH_PATHS = [
 ]
 
 CBT_CLI_SEARCH_PATHS = [
-    "google-cloud-sdk/bin/gcloud",
+    "/home/runner/work/tensorflow_io/tensorflow_io/google-cloud-sdk/bin/cbt",
     "/usr/local/google-cloud-sdk/bin/cbt",
     "/usr/bin/cbt",
     "cbt",
