@@ -20,79 +20,54 @@
 import os
 import subprocess
 import re
+import datetime
 from re import escape
 from tensorflow_io.python.ops import core_ops
 from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
 import tensorflow_io.python.ops.bigtable.bigtable_row_range as row_range
 import tensorflow_io.python.ops.bigtable.bigtable_row_set as row_set
+from google.auth.credentials import AnonymousCredentials
+from google.cloud.bigtable import Client
+from google.cloud.bigtable import column_family
 import tensorflow as tf
 from tensorflow import test
 from threading import Thread
 from typing import List
 
-CBT_CLI_SEARCH_PATHS = [
-    "google-cloud-sdk/bin/cbt",
-    "/usr/local/google-cloud-sdk/bin/cbt",
-    "/usr/bin/cbt",
-    "cbt",
-]
-
-CBT_CLI_PATH_ENV_VAR = "CBT_CLI_PATH"
-
-
-def _get_cbt_binary_path(env_var_name, search_paths, description):
-    res = os.environ.get(env_var_name)
-    if res is not None:
-        if not os.path.isfile(res):
-            raise OSError(
-                f"{description} specified in the {env_var_name} "
-                "environment variable does not exist"
-            )
-        return res
-    for candidate in search_paths:
-        if os.path.isfile(candidate):
-            return candidate
-    raise OSError(f"Could not find {description}")
-
-
-def _get_cbt_cli_path():
-    return _get_cbt_binary_path(CBT_CLI_PATH_ENV_VAR, CBT_CLI_SEARCH_PATHS, "cbt cli")
-
-
 
 class BigtableEmulator:
-    def __init__(self):
+    def __init__(self, project_id="fake_project", instance_id="fake_instance"):
         print("starting BigtableEmulator")
 
         self._emulator_addr = "localhost:8086"
 
-        print("emulator addr", self._emulator_addr)
+        self._client = Client(
+            project=project_id, credentials=AnonymousCredentials(), admin=True
+        )
+        self._instance = self._client.instance(instance_id)
+
 
     def get_addr(self):
         return self._emulator_addr
 
     def create_table(
-        self, project_id, instance_id, table_id, column_families, splits=None
+        self, table_id, column_families=["cf1"]
     ):
-        cli_path = _get_cbt_cli_path()
-        cmd = [
-            cli_path,
-            "-project",
-            project_id,
-            "-instance",
-            instance_id,
-            "createtable",
-            table_id,
-            "families=" + ",".join([f"{fam}:never" for fam in column_families]),
-        ]
-        if splits:
-            cmd.append("splits=" + ",".join(splits))
-        subprocess.check_output(cmd)
+        assert len(column_families) > 0
+
+        table = self._instance.table(table_id)
+
+        assert not table.exists()
+
+        column_families = dict()
+        for fam in column_families:
+            max_versions_rule = column_family.MaxVersionsGCRule(2)
+            column_families[fam] = max_versions_rule
+
+        table.create(column_families=column_families)
 
     def write_tensor(
         self,
-        project_id,
-        instance_id,
         table_id,
         tensor: tf.Tensor,
         rows: List[str],
@@ -101,34 +76,35 @@ class BigtableEmulator:
         assert len(tensor.shape) == 2
         assert len(rows) == tensor.shape[0]
         assert len(columns) == tensor.shape[1]
-        cli_path = _get_cbt_cli_path()
-        for i, row in enumerate(tensor):
-            for j, value in enumerate(row):
-                cmd = [
-                    cli_path,
-                    "-project",
-                    project_id,
-                    "-instance",
-                    instance_id,
-                    "set",
-                    table_id,
-                    rows[i],
-                    f"{columns[j]}={value.numpy().decode()}",
-                ]
-                subprocess.check_output(cmd)
+
+        table = self._instance.table(table_id)
+        assert table.exists()
+
+        rows = []
+        for i, tensor_row in enumerate(tensor):
+            row_key = "row" + str(i).rjust(3, "0")
+            row = table.direct_row(row_key)
+            for j, value in enumerate(tensor_row):
+                family,column = columns[j].split(":")
+                row.set_cell(
+                    family, column, value.numpy(), timestamp=datetime.datetime.utcnow()
+                )
+            rows.append(row)
+        table.mutate_rows(rows)
+
+
 
     def stop(self):
-        self._emulator.terminate()
-        self._output_reading_thread.join()
-        self._emulator.stdout.close()
-        self._emulator.wait()
+        self._client.close()
 
 
 
 
 class BigtableReadTest(test.TestCase):
     def setUp(self):
-        self.emulator = BigtableEmulator()
+        self.emulator = BigtableEmulator(
+            "fake_project",
+            "fake_instance")
 
     def tearDown(self):
         self.emulator.stop()
@@ -139,7 +115,7 @@ class BigtableReadTest(test.TestCase):
         os.environ["BIGTABLE_EMULATOR_HOST"] = self.emulator.get_addr()
         print("create table")
         self.emulator.create_table(
-            "fake_project", "fake_instance", "test-table", ["fam1", "fam2"]
+            "test_read", ["fam1", "fam2"]
         )
 
         values = [[f"[{i,j}]" for j in range(2)] for i in range(20)]
@@ -150,13 +126,11 @@ class BigtableReadTest(test.TestCase):
 
         client = BigtableClient("fake_project", "fake_instance")
         print("get table")
-        table = client.get_table("test-table")
+        table = client.get_table("test_read")
 
         print("write tensor")
         self.emulator.write_tensor(
-            "fake_project",
-            "fake_instance",
-            "test-table",
+            "test_read",
             ten,
             ["row" + str(i).rjust(3, "0") for i in range(20)],
             ["fam1:col1", "fam2:col2"],
