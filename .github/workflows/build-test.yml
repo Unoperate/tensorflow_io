@@ -37,7 +37,7 @@ jobs:
           df -h
           docker run -i --rm -v $PWD:/v -w /v --net=host \
             buildpack-deps:20.04 \
-            bash -x -e .github/workflows/build.wheel.sh python3.7
+            bash -x -e .github/workflows/build.wheel.sh python3.8
 
 
   build-number:
