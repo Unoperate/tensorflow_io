@@ -43,9 +43,4 @@ class BigtableReadTest(test.TestCase):
         print("create table")
 
 
-        print("create client")
-
-        client = BigtableClient("fake_project", "fake_instance")
-        print("get table")
-
 
