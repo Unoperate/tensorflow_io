@@ -42,6 +42,8 @@ class BigtableReadTest(test.TestCase):
         print("test read started")
         print("create table")
 
+        os.environ["BIGTABLE_EMULATOR_HOST"] = "127.0.0.1:8086"
+
         values = [[f"[{i,j}]" for j in range(2)] for i in range(20)]
 
         ten = tf.constant(values)
