@@ -24,12 +24,6 @@ import datetime
 from re import escape
 from tensorflow_io.python.ops import core_ops
 from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
-import tensorflow_io.python.ops.bigtable.bigtable_row_range as row_range
-import tensorflow_io.python.ops.bigtable.bigtable_row_set as row_set
-from google.auth.credentials import AnonymousCredentials
-from google.cloud.bigtable import Client
-from google.cloud.bigtable import column_family
-import tensorflow as tf
 from tensorflow import test
 from threading import Thread
 from typing import List
@@ -48,14 +42,10 @@ class BigtableReadTest(test.TestCase):
         print("test read started")
         print("create table")
 
-        values = [[f"[{i,j}]" for j in range(2)] for i in range(20)]
-
-        ten = tf.constant(values)
 
         print("create client")
 
         client = BigtableClient("fake_project", "fake_instance")
         print("get table")
-        table = client.get_table("test_read")
 
 
