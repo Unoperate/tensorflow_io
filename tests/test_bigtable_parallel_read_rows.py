@@ -24,23 +24,16 @@ import datetime
 from re import escape
 from tensorflow_io.python.ops import core_ops
 from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
-from tensorflow import test
-from threading import Thread
-from typing import List
 
 
 
 
 
 
-class BigtableReadTest(test.TestCase):
+def test_bigtable_read():
+    print("test read started")
+    print("create table")
 
-    def test_read(self):
-
-        os.environ["BIGTABLE_EMULATOR_HOST"] = "127.0.0.1:8086"
-
-        print("test read started")
-        print("create table")
 
 
 
