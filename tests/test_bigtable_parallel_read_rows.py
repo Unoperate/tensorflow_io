@@ -45,6 +45,8 @@ class BigtableEmulator:
 
             print("bigtable env variable set to:",os.environ["BIGTABLE_EMULATOR_HOST"])
             self._env_var = os.environ["BIGTABLE_EMULATOR_HOST"]
+        else:
+            self._env_var = None
         
         os.environ["BIGTABLE_EMULATOR_HOST"] = "127.0.0.1:8086"
 
@@ -60,7 +62,10 @@ class BigtableEmulator:
 
         table = self._instance.table(table_id)
 
-        assert not table.exists()
+        if table.exists():
+            table.delete()
+        
+        table = self._instance.table(table_id)
 
         column_families = dict()
         for fam in column_families:
