@@ -138,10 +138,3 @@ class BigtableReadTest(test.TestCase):
         print("get table")
         table = client.get_table("test_read")
 
-        print("write tensor")
-        self.emulator.write_tensor(
-            "test_read",
-            ten,
-            ["row" + str(i).rjust(3, "0") for i in range(20)],
-            ["fam1:col1", "fam2:col2"],
-        )
