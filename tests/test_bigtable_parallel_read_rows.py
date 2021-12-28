@@ -21,6 +21,7 @@ import os
 import subprocess
 import re
 import datetime
+import unittest
 from re import escape
 from tensorflow_io.python.ops import core_ops
 from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
@@ -30,7 +31,6 @@ from google.auth.credentials import AnonymousCredentials
 from google.cloud.bigtable import Client
 from google.cloud.bigtable import column_family
 import tensorflow as tf
-from tensorflow import test
 from threading import Thread
 from typing import List
 
@@ -112,7 +112,7 @@ class BigtableEmulator:
 
 
 
-class BigtableReadTest(test.TestCase):
+class BigtableReadTest(unittest.TestCase):
     def setUp(self):
         self.emulator = BigtableEmulator(
             "fake_project",
