@@ -23,7 +23,6 @@ import re
 import datetime
 from re import escape
 from tensorflow_io.python.ops import core_ops
-from tensorflow_io.python.ops.bigtable.bigtable_dataset_ops import BigtableClient
 
 
 
