@@ -145,14 +145,3 @@ class BigtableReadTest(test.TestCase):
             ["row" + str(i).rjust(3, "0") for i in range(20)],
             ["fam1:col1", "fam2:col2"],
         )
-
-        print("read rows")
-
-        for i, r in enumerate(
-            table.read_rows(
-                ["fam1:col1", "fam2:col2"],
-                row_set=row_set.from_rows_or_ranges(row_range.empty()),
-            )
-        ):
-            for j, c in enumerate(r):
-                self.assertEqual(values[i][j], c.numpy().decode())
