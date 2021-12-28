@@ -24,8 +24,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_io as tfio
 
-if sys.platform == "darwin":
-    pytest.skip("TODO: macOS is failing", allow_module_level=True)
+pytest.skip("TODO: macOS is failing", allow_module_level=True)
 
 
 @pytest.fixture(name="fashion_mnist", scope="module")

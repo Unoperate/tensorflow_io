@@ -156,3 +156,7 @@ class BigtableReadTest(unittest.TestCase):
         ):
             for j, c in enumerate(r):
                 self.assertEqual(values[i][j], c.numpy().decode())
+
+if __name__ == "__main__":
+    test.main()
+    
