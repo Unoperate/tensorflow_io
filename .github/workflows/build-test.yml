@@ -1,0 +1,56 @@
+name: GitHub CI
+
+on:
+  push:
+    branches:
+      - tests/passing_but_hangs
+
+env:
+  REPO_NAME: ${{ github.repository }}
+  EVENT_NAME: ${{ github.event_name }}
+
+jobs:
+
+  linux-test:
+    name: Test 3.7 Linux
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Linux
+        run: |
+          set -x -e
+          bash -x -e .github/workflows/build.space.sh
+          bash -x -e tests/test_pulsar/pulsar_test.sh
+          bash -x -e tests/test_kafka/kafka_test.sh
+          bash -x -e tests/test_aws/aws_test.sh
+          bash -x -e tests/test_gcloud/test_pubsub_bigtable.sh
+          bash -x -e tests/test_prometheus/prometheus_test.sh start
+          bash -x -e tests/test_elasticsearch/elasticsearch_test.sh start
+          bash -x -e tests/test_mongodb/mongodb_test.sh start
+          bash -x -e tests/test_azure/start_azure.sh
+          bash -x -e tests/test_sql/sql_test.sh
+          bash -x -e tests/test_gcloud/test_gcs.sh gcs-emulator
+          bash -x -e tests/test_hdfs/hdfs_test.sh
+      - name: Test Linux
+        run: |
+          set -x -e
+          df -h
+          docker run -i --rm -v $PWD:/v -w /v --net=host \
+            buildpack-deps:20.04 \
+            bash -x -e .github/workflows/build.wheel.sh python3.7
+
+
+  build-number:
+    name: Build Number
+    if: github.event_name == 'push'
+    runs-on: ubuntu-18.04
+    steps:
+      - run: |
+          set -e -x
+          BUILD_NUMBER=$(date "+%Y%m%d%H%M%S")
+          echo ${BUILD_NUMBER} > BUILD_NUMBER
+      - uses: actions/upload-artifact@v2
+        with:
+          name: BUILD_NUMBER
+          path: BUILD_NUMBER
+
