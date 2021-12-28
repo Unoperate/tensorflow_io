@@ -53,7 +53,10 @@ class BigtableEmulator:
 
         table = self._instance.table(table_id)
 
-        assert not table.exists()
+        if table.exists():
+            table.delete()
+
+            table = self._instance.table(table_id)
 
         column_families = dict()
         for fam in column_families:
@@ -97,15 +100,13 @@ class BigtableEmulator:
 
 
 class BigtableReadTest(test.TestCase):
-    def setUp(self):
+
+    def test_read(self):
+
         self.emulator = BigtableEmulator(
             "fake_project",
             "fake_instance")
 
-    def tearDown(self):
-        self.emulator.stop()
-
-    def test_read(self):
         print("test read started")
         print("create table")
         self.emulator.create_table(
@@ -122,4 +123,5 @@ class BigtableReadTest(test.TestCase):
         print("get table")
         table = client.get_table("test_read")
 
+        self.emulator.stop()
 
