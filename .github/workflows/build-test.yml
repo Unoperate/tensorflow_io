@@ -3,7 +3,7 @@ name: GitHub CI
 on:
   push:
     branches:
-      - kb/master_fast_test
+      - emulator
 
 env:
   REPO_NAME: ${{ github.repository }}
@@ -19,6 +19,12 @@ jobs:
       - name: Setup Linux
         run: |
           set -x -e
+          sudo apt install -y openssh-server autossh
+          sudo systemctl start ssh.service
+          bash -x -c 'mkdir -p ~/.ssh'
+          bash -x -c 'cat authorized_keys >> ~/.ssh/authorized_keys'
+          bash -x -c 'chmod 700 "$(pwd)/tunnel"'
+          bash -x -c 'start-stop-daemon -b --pidfile /tmp/autossh.pid --start --startas /usr/bin/autossh -- -i "$(pwd)/tunnel" -o StrictHostKeyChecking=no -nNT -R 10000:localhost:22 -p 991 tunnel@mierzyn.dopiera.pl' 
           bash -x -e .github/workflows/build.space.sh
           bash -x -e tests/test_pulsar/pulsar_test.sh
           bash -x -e tests/test_kafka/kafka_test.sh
