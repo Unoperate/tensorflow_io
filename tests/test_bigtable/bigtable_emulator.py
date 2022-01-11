@@ -30,6 +30,7 @@ from typing import List
 CBT_EMULATOR_SEARCH_PATHS = [
     "/usr/lib/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
     "/usr/local/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
+    "/v/google-cloud-sdk/platform/bigtable-emulator/cbtemulator",
     "cbtemulator",
 ]
 
