@@ -70,14 +70,9 @@ class BigtableTable:
             A `tf.data.Dataset` returning the cell contents.
         """
         if filter is None:
-            filter = filters.latest(),
+            filter = filters.latest()
         return _BigtableDataset(
-            self._client_resource,
-            self._table_id,
-            columns,
-            row_set,
-            filter,
-            output_type,
+            self._client_resource, self._table_id, columns, row_set, filter, output_type
         )
 
     def parallel_read_rows(
@@ -102,16 +97,13 @@ class BigtableTable:
         """
         if row_set is None:
             row_set = bigtable_row_set.from_rows_or_ranges(
-                    bigtable_row_range.infinite()
-                    )
+                bigtable_row_range.infinite()
+            )
         if filter is None:
-            filter = filters.latest(),
+            filter = filters.latest()
 
         samples = core_ops.bigtable_split_row_set_evenly(
-            self._client_resource,
-            row_set._impl,
-            self._table_id,
-            num_parallel_calls,
+            self._client_resource, row_set._impl, self._table_id, num_parallel_calls
         )
 
         def map_func(idx):
