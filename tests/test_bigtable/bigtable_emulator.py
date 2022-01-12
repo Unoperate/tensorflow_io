@@ -37,6 +37,7 @@ CBT_EMULATOR_SEARCH_PATHS = [
 CBT_CLI_SEARCH_PATHS = [
     "/usr/local/google-cloud-sdk/bin/cbt",
     "/usr/bin/cbt",
+    "/v/google-cloud-sdk/bin/cbt",
     "cbt",
 ]
 
