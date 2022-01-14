@@ -69,6 +69,12 @@ class BigtableTable:
         Returns:
             A `tf.data.Dataset` returning the cell contents.
         """
+
+        # Python initializes the default arguments once at the start of the
+        # program. If the fork happens after that (for instance when we xdist
+        # which runs multiple tests at once) the program deadlocks and hangs.
+        # That is why we have to make sure, all default arguments are
+        # initialized on each invocation.
         if filter is None:
             filter = filters.latest()
         return _BigtableDataset(
@@ -95,6 +101,9 @@ class BigtableTable:
         Returns:
             A `tf.data.Dataset` returning the cell contents.
         """
+
+        # We have to make sure that all the default arguments are initialized
+        # on each invocation. For more info see read_rows method.
         if row_set is None:
             row_set = bigtable_row_set.from_rows_or_ranges(
                 bigtable_row_range.infinite()
