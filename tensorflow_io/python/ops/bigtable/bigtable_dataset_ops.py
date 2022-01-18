@@ -71,10 +71,10 @@ class BigtableTable:
         """
 
         # Python initializes the default arguments once at the start of the
-        # program. If the fork happens after that (for instance when we xdist
-        # which runs multiple tests at once) the program deadlocks and hangs.
-        # That is why we have to make sure, all default arguments are
-        # initialized on each invocation.
+        # program. If the fork happens after that (for instance when we run
+        # tests using xdist) the program deadlocks and hangs. That is why we
+        # have to make sure, all default arguments are initialized on each
+        # invocation.
         if filter is None:
             filter = filters.latest()
         return _BigtableDataset(
