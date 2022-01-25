@@ -29,6 +29,7 @@ from tensorflow import test
 import pytest
 import sys
 
+
 @pytest.mark.skipif(sys.platform == "darwin", reason="macOS fails now")
 class BigtableParallelReadTest(test.TestCase):
     def setUp(self):
